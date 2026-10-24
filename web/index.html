@@ -15,12 +15,13 @@
 <body>
 <h1>Gemma web test</h1>
 <p id="env"></p>
-<label>Robot <select id="robot"><option>bittle</option><option>nybble</option></select></label>
+<label>Robot <select id="robot"><option>bittle</option><option>nybble</option><option>quaddle</option></select></label>
 <p>Model: URL <input id="url" type="text"
   value="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.litertlm"><br>
   or file <input id="file" type="file" accept=".litertlm"></p>
 <button id="load">Load model</button>
 <button id="eval" disabled>Run eval</button>
+<p><button id="connect">Connect robot (Bluetooth)</button> <button id="stop">Stop</button></p>
 <p><input id="req" type="text" placeholder="walk forward then sit"> <button id="ask" disabled>Ask</button></p>
 <button id="copy">Copy log</button>
 <pre id="log"></pre>
@@ -29,6 +30,7 @@
 // (Engine.create fails with "getMutableMainExecutorSettings is not a function" on a Pixel 7 Pro, 2026-10-23).
 import { Engine, SamplerType } from "https://cdn.jsdelivr.net/npm/@litert-lm/core@0.18.0/+esm";
 import { parse } from "./parse.js";
+import { connectWebBluetooth, robotFromReply } from "./ble.js";
 
 const $ = (id) => document.getElementById(id);
 const log = (s) => { $("log").textContent += s + "\n"; console.log(s); };
@@ -36,6 +38,28 @@ const fetchText = async (p) => { const r = await fetch(p); if (!r.ok) throw new 
 $("env").textContent = `WebGPU: ${"gpu" in navigator ? "yes" : "NO"} | ${navigator.userAgent}`;
 
 let engine, prompt, pattern, base, prev = null;
+
+const ROBOTS = ["bittle", "nybble", "quaddle"];  // contract/<robot>.json
+let link = null;
+// Fetched at page start: requestDevice() needs the user's tap, so connect() must not wait on the network first.
+const registryReady = Promise.all(ROBOTS.map(async (r) => {
+  const d = JSON.parse(await fetchText(`../contract/${r}.json`));
+  return [r, [d.model, d.ble_prefix]];
+})).then(Object.fromEntries);
+
+async function connect() {
+  const registry = await registryReady;
+  const t = performance.now();
+  const c = await connectWebBluetooth([...Object.values(registry).map(([, p]) => p), "petoi"], log);
+  const robot = robotFromReply(c.reply, registry);
+  log(`connected to ${c.name} in ${((performance.now() - t) / 1000).toFixed(1)}s: ${c.reply} -> ${robot ?? "unknown"}`);
+  if (!robot) {
+    c.link.close();
+    throw new Error("not a robot this page knows (no contract model name in the '?' reply)");
+  }
+  link = c.link;
+  link.device.addEventListener("gattserverdisconnected", () => { log("robot disconnected"); link = null; });
+}
 
 async function load() {
   const robot = $("robot").value;
@@ -62,6 +86,7 @@ const textOf = (m) => typeof m.content === "string" ? m.content
 
 // Dev hook for web/prefill_experiments.js (run over CDP / chrome://inspect). Getters, so it sees the loaded engine.
 window.__test = { get engine() { return engine; }, get prompt() { return prompt; }, get pattern() { return pattern; },
+                  get link() { return link; },
                   parse, textOf, SamplerType };
 
 // Each request runs on a clone of the prefilled conversation (~2 s instead of ~9 s re-reading the prompt).
@@ -93,6 +118,7 @@ async function runEval() {
 
 const guard = (fn) => async () => { try { await fn(); } catch (e) { log(`ERROR: ${e?.stack ?? e}`); } };
 $("load").onclick = guard(load);
+$("connect").onclick = guard(connect);
 $("eval").onclick = guard(async () => {  // a second run in parallel doubles every latency
   $("eval").disabled = true;
   try { await runEval(); } finally { $("eval").disabled = false; }
