@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gemma web test</title>
+<style>
+  body { font: 15px/1.4 system-ui, sans-serif; margin: 16px; background: #fff; color: #111; }
+  input[type=text] { width: 100%; box-sizing: border-box; }
+  button, select, input { font: inherit; margin: 4px 0; }
+  pre { white-space: pre-wrap; word-break: break-word; background: #f3f3f3; padding: 8px; }
+  @media (prefers-color-scheme: dark) { body { background: #111; color: #eee; } pre { background: #222; } }
+</style>
+</head>
+<body>
+<h1>Gemma web test</h1>
+<p id="env"></p>
+<label>Robot <select id="robot"><option>bittle</option><option>nybble</option></select></label>
+<p>Model: URL <input id="url" type="text"
+  value="https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it-gpu.litertlm"><br>
+  or file <input id="file" type="file" accept=".litertlm"></p>
+<button id="load">Load model</button>
+<button id="eval" disabled>Run eval</button>
+<p><input id="req" type="text" placeholder="walk forward then sit"> <button id="ask" disabled>Ask</button></p>
+<button id="copy">Copy log</button>
+<pre id="log"></pre>
+<script type="module">
+import { Engine, SamplerType, loadLiteRtLm } from "https://cdn.jsdelivr.net/npm/@litert-lm/core@0.18.1/+esm";
+import { parse } from "./parse.js";
+
+// 0.18.1's DEFAULT_WASM_PATH still points at core@0.12.1/wasm, so load the matching WASM explicitly.
+const wasmReady = loadLiteRtLm("https://cdn.jsdelivr.net/npm/@litert-lm/core@0.18.1/wasm");
+
+const $ = (id) => document.getElementById(id);
+const log = (s) => { $("log").textContent += s + "\n"; console.log(s); };
+const fetchText = async (p) => { const r = await fetch(p); if (!r.ok) throw new Error(`${p}: ${r.status}`); return r.text(); };
+$("env").textContent = `WebGPU: ${"gpu" in navigator ? "yes" : "NO"} | ${navigator.userAgent}`;
+
+let engine, base, pattern;
+
+async function load() {
+  const robot = $("robot").value;
+  const prompt = await fetchText(`../contract/${robot}.prompt.txt`);
+  pattern = JSON.parse(await fetchText(`../contract/${robot}.schema.json`)).items.pattern;
+  const model = $("file").files[0] ?? $("url").value;
+  log(`loading ${model.name ?? model} ...`);
+  await wasmReady;
+  let t = performance.now();
+  engine =await Engine.create({ model, mainExecutorSettings: { maxNumTokens: 2048 } });
+  log(`model loaded in ${((performance.now() - t) / 1000).toFixed(1)}s`);
+  t = performance.now();
+  // One conversation with the system prompt prefilled; each request runs on a clone so they don't see each other.
+  base = await engine.createConversation({
+    preface: { messages: [{ role: "system", content: prompt }], extra_context: { enable_thinking: false } },
+    sessionConfig: { samplerParams: { type: SamplerType.GREEDY }, maxOutputTokens: 128 },
+    prefillPrefaceOnInit: true,
+  });
+  log(`system prompt prefilled in ${((performance.now() - t) / 1000).toFixed(1)}s (${robot})`);
+  $("eval").disabled = $("ask").disabled = false;
+}
+
+const textOf = (m) => typeof m.content === "string" ? m.content
+  : (m.content ?? []).filter((p) => p.type === "text").map((p) => p.text).join("");
+
+async function ask(text) {
+  const conv = await base.clone();
+  const t = performance.now();
+  try {
+    const out = textOf(await conv.sendMessage(text)).trim();
+    return { out, secs: (performance.now() - t) / 1000, ...parse(pattern, out) };
+  } finally {
+    await conv.delete();
+  }
+}
+
+async function runEval() {
+  const cases = JSON.parse(await fetchText("../eval/cases.json"));
+  let passed = 0; const times = [];
+  for (const [text, acceptable] of cases) {
+    const r = await ask(text);
+    times.push(r.secs);
+    const ok = r.error === null && acceptable.some((a) => JSON.stringify(a) === JSON.stringify(r.commands));
+    passed += ok;
+    log(`${r.secs.toFixed(1)}s | ${ok ? "PASS" : "FAIL"} | ${JSON.stringify(text)} -> ${r.out}` +
+        (ok ? "" : `  (${r.error ?? "want " + JSON.stringify(acceptable)})`));
+  }
+  const avg = times.reduce((a, b) => a + b, 0) / times.length;
+  log(`\n${passed}/${cases.length} passed | latency avg ${avg.toFixed(1)}s, max ${Math.max(...times).toFixed(1)}s`);
+}
+
+const guard = (fn) => async () => { try { await fn(); } catch (e) { log(`ERROR: ${e?.stack ?? e}`); } };
+$("load").onclick = guard(load);
+$("eval").onclick = guard(runEval);
+$("ask").onclick = guard(async () => {
+  const r = await ask($("req").value);
+  log(`${r.secs.toFixed(1)}s | ${r.out} -> ${r.error ?? JSON.stringify(r.commands)}`);
+});
+$("copy").onclick = () => navigator.clipboard.writeText($("log").textContent);
+</script>
+</body>
+</html>
