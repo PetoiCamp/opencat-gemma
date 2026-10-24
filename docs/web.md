@@ -1,6 +1,6 @@
 # The phone web page: where things run
 
-`web/demo.html` (and the test page `web/index.html`) are static files: HTML, JavaScript and the checked-in contract files. Today they are served from a laptop over USB (`adb reverse`, `http://localhost:8000`). They can also be hosted on any static `https` host; nothing runs on the server.
+`web/demo.html` (and the test page `web/index.html`) are static files: HTML, JavaScript and the checked-in contract files. They are hosted at <https://gemma.petoi.com/web/> (demo: <https://gemma.petoi.com/web/demo.html>). They can also be served from a laptop over USB (`adb reverse`, `http://localhost:8000`) when you change the code. Either way, nothing runs on the server.
 
 ## What each part does once the page is hosted
 

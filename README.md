@@ -16,8 +16,8 @@ This repo gives your team **two working demos**, so you can skip the setup troub
 | Robot link | Bluetooth | USB cable, Bluetooth or Wi-Fi |
 | Code | JavaScript, `web/` | Python, `opencat_gemma/` |
 | Fits well with | Mobile AI track; Google partner tech (Android, Pixel, LiteRT) | Fast prototyping in Python; Physical AI / IoT & Robotics |
-| You need | An Android phone with Chrome, a USB cable, a laptop with `adb` and Python | A laptop with Python 3 and Ollama |
-| Start here | [Android phone](#android-phone-web-experimental) | [Quickstart (laptop)](#quickstart-laptop) |
+| You need | An Android phone with Chrome and the model file | A laptop with Python 3 and Ollama |
+| Start here | Open <https://gemma.petoi.com/web/demo.html> in Chrome ([steps](#android-phone-web-experimental)) | [Quickstart (laptop)](#quickstart-laptop) |
 
 ### 2. Before you touch the robot (2 minutes)
 
@@ -37,7 +37,7 @@ This repo gives your team **two working demos**, so you can skip the setup troub
 |---|---|
 | Phone: "Web Bluetooth API globally disabled" | You're in Brave. Use Chrome, or enable Web Bluetooth in `brave://flags`. |
 | Phone: the page asks for the model file again | The copy was cut short by a reload. Pick the file again and wait for `ready` before reloading. |
-| Phone: the page doesn't load | Is the cable plugged in, is `python3 -m http.server 8000` running, and did you run `adb reverse tcp:8000 tcp:8000` (again after re-plugging)? |
+| Phone: the page doesn't load | Hosted: check the address (<https://gemma.petoi.com/web/demo.html>) and the phone's internet. Your own copy: is the cable plugged in, is `python3 -m http.server 8000` running, and did you run `adb reverse tcp:8000 tcp:8000` (again after re-plugging)? |
 | Phone: "WebGPU: NO", or the model won't load | Update Chrome. Only a Pixel 7 Pro was tested; older phones may not support WebGPU or have enough memory. |
 | Phone: Connect finds no robot, or fails (e.g. "Unsupported device") | The robot is off, or something else is connected to it: the phone's or computer's own Bluetooth settings (disconnect the robot there), the Petoi app, another tab, or a teammate's laptop. |
 | Phone: robot over Wi-Fi | Not possible from a phone page yet: Android 17 blocks Chrome from the local network. Use Bluetooth. |
@@ -258,12 +258,12 @@ Gemma accuracy and latency can be checked without a robot (see below).
 
 ## Android phone (web, experimental)
 
-Gemma 4 E2B runs **on the phone**, in Chrome (LiteRT-LM web 0.18.0, WebGPU), and the robot is driven over Bluetooth LE (Web Bluetooth). Verified on a Pixel 7 Pro (Android 17, Chrome 156) with a Bittle X, 2026-10-23. For now the laptop only serves the page to the phone over the USB cable; hosting it on `https` would remove the laptop (see [docs/web.md](docs/web.md)).
+Gemma 4 E2B runs **on the phone**, in Chrome (LiteRT-LM web 0.18.0, WebGPU), and the robot is driven over Bluetooth LE (Web Bluetooth). Verified on a Pixel 7 Pro (Android 17, Chrome 156) with a Bittle X, 2026-10-23. **The pages are hosted at <https://gemma.petoi.com/web/>:** open them in Chrome. No laptop, cable or setup is needed, and Gemma still runs on your device (see [docs/web.md](docs/web.md)). The hosted demo also worked in desktop Chrome on a Mac with a Quaddle (2026-10-24).
 
 ### What you need
 
 - An Android phone with **Chrome**. In Brave, Web Bluetooth is off by default (see "Browsers" below).
-- A USB cable, with **USB debugging** turned on on the phone. On the laptop: `adb` (Android platform-tools) and Python 3.
+- Only if you serve the pages yourself (to change the code): a USB cable, **USB debugging** on the phone, and `adb` and Python 3 on the laptop.
 - The model file on the phone (see [The model](#the-model) below).
 - The robot switched on, with the **Petoi phone app closed** (only one Bluetooth client can connect).
 
@@ -280,24 +280,27 @@ Gemma 4 E2B runs **on the phone**, in Chrome (LiteRT-LM web 0.18.0, WebGPU), and
 - **Gemma 4 E4B** (`litert-community/gemma-4-E4B-it-litert-lm`) was tried before the library version was fixed, and failed for that reason. It was not retried.
 - The library version matters: the pages pin `@litert-lm/core` 0.18.0 (`web/litert.js`), because 0.18.1 failed to load the model.
 
-### Start (every session)
+### Open the page
 
-1. On the laptop, from the repo root: `python3 -m http.server 8000`.
-2. `adb reverse tcp:8000 tcp:8000`. Run it again after re-plugging the phone.
-3. On the phone, open one of the pages below in Chrome. Keep the cable plugged in: the page is served over it.
+- **Hosted (easiest):** open <https://gemma.petoi.com/web/demo.html> in Chrome. Nothing else to set up.
+- **Serving your own copy** (after changing the code):
+  1. On the laptop, from the repo root: `python3 -m http.server 8000`.
+  2. `adb reverse tcp:8000 tcp:8000`. Run it again after re-plugging the phone.
+  3. On the phone, open the `localhost` address below in Chrome. Keep the cable plugged in: the page is served over it.
+  - Your own copy and the hosted site keep **separate** model copies, so each asks for the model file on its first visit.
 
 ### Which page?
 
-| Page | Use it to | Address on the phone |
-|---|---|---|
-| **Demo** (`web/demo.html`) | Show it off: type a request, and the robot does it | `http://localhost:8000/web/demo.html` |
-| **Test** (`web/index.html`) | Check Gemma (eval: accuracy and speed, no robot needed), try requests, read the raw log | `http://localhost:8000/web/` |
+| Page | Use it to | Hosted | Your own copy |
+|---|---|---|---|
+| **Demo** (`web/demo.html`) | Show it off: type a request, and the robot does it | <https://gemma.petoi.com/web/demo.html> | `http://localhost:8000/web/demo.html` |
+| **Test** (`web/index.html`) | Check Gemma (eval: accuracy and speed, no robot needed), try requests, read the raw log | <https://gemma.petoi.com/web/> | `http://localhost:8000/web/` |
 
 Use one page at a time with the robot: only one page can hold the Bluetooth connection. Leaving a page drops its connection.
 
 ### Demo page
 
-1. Open `http://localhost:8000/web/demo.html`.
+1. Open <https://gemma.petoi.com/web/demo.html> (or your own copy).
    - **First visit:** the page asks for the model file. Pick `gemma-4-E2B-it-web.litertlm`. It loads (about 17 s), then says "keeping a copy on this phone…" (about 30 s). **Don't reload until it says `ready`,** or the copy is lost.
    - **Later visits:** the model loads from that copy by itself (about 17 s). Use "Change model" to pick a different file.
 2. Tap **Connect robot**, pick the robot (`Bittle…_BLE`), and wait about 10 s ("connecting…"). A Bittle X lies down when Bluetooth connects; the first command makes it stand.
@@ -306,7 +309,7 @@ Use one page at a time with the robot: only one page can hold the Bluetooth conn
 
 ### Test page
 
-1. Open `http://localhost:8000/web/`, pick the model file (on **every** visit; this page keeps no copy), and tap **Load model** (about 7 s, plus about 7 s to read the robot's prompt).
+1. Open <https://gemma.petoi.com/web/> (or your own copy), pick the model file (on **every** visit; this page keeps no copy), and tap **Load model** (about 7 s, plus about 7 s to read the robot's prompt).
 2. **Run eval** runs the 16 requests in `eval/cases.json` and prints pass/fail and timing per request (Pixel 7 Pro: 15/16, about 2 s per request). No robot needed.
 3. Optional: tap **Connect robot (Bluetooth)**, type in the box, and tap **Ask**; the robot runs the result. **Stop** stops it. **Copy log** copies the log.
 
