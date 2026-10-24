@@ -6,7 +6,7 @@ Talk to a Petoi robot (Bittle X, Nybble Q or Quaddle) with Gemma running 100% on
 
 | Robot | Firmware family | Verified on hardware |
 |---|---|---|
-| Bittle X | ESP32 (BiBoard) | USB, Bluetooth LE and Wi-Fi, chat mode end to end (macOS, firmware B10_260527) |
+| Bittle X | ESP32 (BiBoard) | USB, Bluetooth LE and Wi-Fi, chat mode end-to-end (macOS, firmware B10_260527) |
 | Nybble Q | ESP32 (BiBoard) | Not yet verified on hardware |
 | Quaddle | ESP32-S3 | Firmware Q_261022 (2026-10-23). Verified: USB detection; Bluetooth LE detection, including choosing it by name (`--bluetooth --name Quaddle03`) with a Bittle also nearby; chat over Bluetooth (stand/sit, `kwkF 3`, `kbkF 2`, timed turn, Ctrl+C stop). Wi-Fi: `--wifi-setup` over USB, detection over WebSocket, chat (stand/sit, `kwkF 3`), and the Ctrl+C stop with retry. |
 
@@ -142,6 +142,10 @@ Bittle X has 69 commands, Nybble Q 52 and Quaddle 100. Most are shared; Bittle X
 - **Mouse mode:** `XO` turns the robot into a Bluetooth mouse (its motion moves the computer's cursor); `Xo` turns it back into a dog. Either one ends the request: any command after it is dropped. **`XO` is refused over `--bluetooth`,** because it disconnects the Bluetooth link; use USB or Wi-Fi.
 - **No degree turns:** `kvtL`/`kvtR` are timed turns, sent without a number. `kvtL 90` never stops by itself on current firmware (Q_261022, the same bug as on Bittle X), so the allowlist rejects angles.
 - It has none of `kvtF`, `ktbl` or the `kflip*` codes.
+
+## Understanding the sensors' input
+Use the serial command 'X' to activate a single sensor's demo. For example, "XD" turns on DoubleDistanceSensor, and "Xd" turns it off. "XT" turns on the DoubleTouchSensor. The supported sensor list is in OpenCat.h. 
+You can use the serial command "Ra", "Rd", "Wa", "Wd" to AnalogRead, DigitalRead, AnalogWrite, DigitalWrite certain pins. Read the demo code and comments to understand the signal's properties before writing control logic. 
 
 | Group | Examples | Notes |
 |---|---|---|
