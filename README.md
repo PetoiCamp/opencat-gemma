@@ -2,6 +2,8 @@
 
 Talk to a Petoi robot (Bittle X, Nybble Q or Quaddle) with Gemma running 100% on-device.
 
+**Petoi doc center:** <https://guide.petoi.com/>
+
 ## Hackathon quick start
 
 This repo gives your team **two working demos**, so you can skip the setup trouble and start on your own idea within the first hour. Each demo already does the hard parts: Gemma turns a typed request into robot commands, a safety check rejects anything not allowed, and the robot moves.
@@ -193,6 +195,7 @@ Bittle X has 69 commands, Nybble Q 52 and Quaddle 100. Most are shared; Bittle X
 ## Understanding the sensors' input
 Use the serial command 'X' to activate a single sensor's demo. For example, "XD" turns on DoubleDistanceSensor, and "Xd" turns it off. "XT" turns on the DoubleTouchSensor. The supported sensor list is in OpenCat.h. 
 You can use the serial command "Ra", "Rd", "Wa", "Wd" to AnalogRead, DigitalRead, AnalogWrite, DigitalWrite certain pins. Read the demo code and comments to understand the signal's properties before writing control logic. 
+The [extensible modules guide](https://guide.petoi.com/extensible-modules/introduction) links to the docs for every sensor.
 
 **Nybble Eye Color**
 The Nybble RGB ultrasonic eye color is set with the uppercase token C, followed by five raw bytes and a ~ terminator (byte value 126). The on-wire format is C, red, green, blue, eye index, effect, ~. Red, green, and blue are each 0–125; 126 cannot be used as a color because it is the binary-command terminator. The eye index is 0 for changing both eyes, 1 for the right eye, and 2 for the left eye. The effect is 0 for breathing, 1 for rotate, 2 for flash, and 3 for steady. Rotate and flash apply to all LEDs regardless of the eye index. A single C with no payload cancels manual color and returns the eyes to automatic distance-based colors. An in-firmware example of both eyes breathing red is the byte array {125, 0, 0, 0, 0, 126}.
