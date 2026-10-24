@@ -54,20 +54,24 @@ const fetchText = async (p) => { const r = await fetch(p); if (!r.ok) throw new 
 const since = (t) => ((performance.now() - t) / 1000).toFixed(1);
 
 let gemma = null, robot = "bittle", opfs = null, turn = null;
+let asking = false, loadingModel = false;  // no second request, model load or connect while one is in flight
 const status = { model: "not loaded", robot: "not connected" };
 const registryReady = loadRegistry(fetchText);  // ready before the Connect tap (requestDevice needs the tap)
 
 // Robot progress goes into the current chat entry: "sent ..." lines become ✓ lines.
 const driver = new Driver((s) => {
   s = s.trim();
-  if (!turn || s.startsWith("sent ")) return;  // sent lines come through onSent instead
-  turn.line(s.startsWith("STOP FAILED") ? `✗ ${s}` : s, s.startsWith("STOP FAILED") ? "line bad" : "muted");
+  if (driver.busy && s.startsWith("sent ")) return;  // a plan's sent lines come through onSent instead
+  const bad = s.startsWith("STOP FAILED");
+  if (!turn) return note(bad ? `✗ ${s}` : s);  // e.g. STOP tapped before any request
+  turn.line(bad ? `✗ ${s}` : s, bad ? "line bad" : "muted");
 });
 
 function refresh() {
   $("status").textContent = `model: ${status.model} · robot: ${status.robot}`;
-  $("go").disabled = !gemma || !driver.link || driver.busy;
-  $("stop").disabled = !driver.link;
+  $("go").disabled = !gemma || !driver.link || driver.busy || asking || loadingModel;
+  $("change").disabled = $("file").disabled = $("connect").disabled = asking || driver.busy || loadingModel;
+  $("stop").disabled = !driver.link && !driver.busy;  // never disabled while a plan runs
 }
 const setStatus = (key, value) => { status[key] = value; refresh(); };
 
@@ -95,17 +99,11 @@ const note = (s) => newTurn("").line(s, "muted");
 
 // file: a picked File, or null to use the copy kept on the phone.
 async function startModel(file) {
+  loadingModel = true;
+  refresh();
   try {
     let model = file;
-    if (file) {
-      setStatus("model", "keeping a copy on this phone…");
-      try {
-        if (!opfs) throw new Error("no private storage in this browser");
-        await saveModel(file, opfs);
-      } catch (e) {
-        note(`Couldn't keep a copy of the model (${e.message}); you'll need to pick it again next time.`);
-      }
-    } else {
+    if (!file) {
       const stored = opfs && await loadModel(opfs);
       if (!stored) {
         $("pick").hidden = false;
@@ -116,17 +114,33 @@ async function startModel(file) {
     }
     setStatus("model", "loading…");
     const t = performance.now();
-    await gemma?.close();
+    const old = gemma;  // never leave a closed engine where the Go handler can reach it
     gemma = null;
+    refresh();
+    await old?.close();
     const g = await Gemma.load({ Engine, SamplerType }, model, { fetchText });
     await g.setRobot(robot);
+    if (g.robot !== robot) await g.setRobot(robot);  // Connect may have changed robot meanwhile
     gemma = g;
     $("pick").hidden = true;
     $("change").hidden = false;
-    setStatus("model", `ready (loaded in ${since(t)}s)`);
+    const loaded = `ready (loaded in ${since(t)}s)`;
+    if (file) {  // saved only once it loads, so a bad file is never kept
+      setStatus("model", "keeping a copy on this phone…");
+      try {
+        if (!opfs) throw new Error("no private storage in this browser");
+        await saveModel(file, opfs);
+      } catch (e) {
+        note(`Couldn't keep a copy of the model (${e.message}); you'll need to pick it again next time.`);
+      }
+    }
+    setStatus("model", loaded);
   } catch (e) {
     gemma = null;
     setStatus("model", `error: ${e.message}`);
+  } finally {
+    loadingModel = false;
+    refresh();
   }
 }
 
@@ -136,15 +150,26 @@ $("change").onclick = () => { $("pick").hidden = false; };
 $("connect").onclick = async () => {
   try {
     const c = await connectRobot(await registryReady, () => {});
+    driver.link?.close?.();  // a reconnect replaces the old link
     driver.link = c.link;
-    c.link.device.addEventListener("gattserverdisconnected", () => { driver.link = null; setStatus("robot", "disconnected"); });
+    c.link.device.addEventListener("gattserverdisconnected", () => {
+      if (driver.link === c.link) { driver.link = null; setStatus("robot", "disconnected"); }  // not a replaced link
+    });
     setStatus("robot", `${c.name} (${c.robot})`);
     if (c.robot !== robot) {
-      robot = c.robot;
       if (gemma) {
-        setStatus("model", `switching to ${robot}…`);
-        await gemma.setRobot(robot);
+        setStatus("model", `switching to ${c.robot}…`);
+        try {
+          await gemma.setRobot(c.robot);
+        } catch (e) {
+          gemma = null;
+          setStatus("model", `error: ${e.message} (reload the page)`);
+          return note(`Couldn't switch the model to ${c.robot}: ${e.message}`);
+        }
+        robot = c.robot;  // only once Gemma has switched
         setStatus("model", "ready");
+      } else {
+        robot = c.robot;
       }
     }
   } catch (e) {
@@ -159,19 +184,22 @@ $("form").onsubmit = async (ev) => {
   $("req").value = "";
   turn = newTurn(text);
   const t = performance.now();
-  $("go").disabled = true;
+  const ticket = driver.ticket();  // a STOP or page hide during inference cancels this plan
+  asking = true;
+  refresh();
   try {
     const r = await gemma.ask(text);
     if (r.error) return turn.line(`✗ not allowed, robot untouched (${r.error})`, "line bad");
     if (!r.commands.length) return turn.line("nothing to do", "muted");
     turn.line(`Gemma (${r.secs.toFixed(1)}s): ${r.commands.join(", ")}`, "muted");
-    const outcome = driver.run(gemma.contract, r.commands, { onSent: (c, reply) => turn.line(`✓ ${c} → ${reply}`, "line ok") });
+    const outcome = driver.run(gemma.contract, r.commands, { ticket, onSent: (c, reply) => turn.line(`✓ ${c} → ${reply}`, "line ok") });
     refresh();
     if (await outcome === "stopped") turn.line("stopped", "line bad");
   } catch (e) {
     turn.line(`✗ ${e.message}`, "line bad");
   } finally {
     turn.line(`total ${since(t)}s`, "muted");
+    asking = false;
     refresh();
   }
 };

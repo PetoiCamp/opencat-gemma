@@ -70,3 +70,28 @@ test("a robot error rejects, after the runner's STOP", async () => {
   assert.deepEqual(d.link.sent, ["ksit", STOP]);
   assert.equal(d.busy, false);
 });
+
+// A ticket taken before Gemma's inference: a stop (or page hide) during inference cancels the plan it produces.
+test("stop between ticket and run cancels the plan; only stop's own STOP is sent", async () => {
+  const d = driver(fakeLink());
+  const ticket = d.ticket();
+  await d.stop("STOP button");
+  assert.equal(await d.run(B, ["kwkF", "ksit"], { ticket }), "stopped");
+  assert.deepEqual(d.link.sent, [STOP]);
+  assert.equal(d.busy, false);
+});
+
+test("stopIfRunning between ticket and run cancels the plan and sends nothing", async () => {
+  const d = driver(fakeLink());
+  const ticket = d.ticket();
+  d.stopIfRunning("page hidden");
+  assert.equal(await d.run(B, ["kwkF", "ksit"], { ticket }), "stopped");
+  assert.deepEqual(d.link.sent, []);
+});
+
+test("a ticket with no stop since runs normally", async () => {
+  const d = driver(fakeLink());
+  const ticket = d.ticket();
+  assert.equal(await d.run(B, ["kwkF", "ksit"], { ticket }), "done");
+  assert.deepEqual(d.link.sent, ["kwkF 3", "ksit"]);
+});
