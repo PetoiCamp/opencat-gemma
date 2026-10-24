@@ -347,3 +347,34 @@ Catches page and API bugs before involving the phone.
 git add README.md docs/superpowers/plans/2026-10-23-web-gemma-connection.md
 git commit -m "docs: web Gemma connection test results"
 ```
+
+---
+
+## Results (2026-10-23)
+
+**Device:** Pixel 7 Pro, Android 17, Chrome 156.0.8078.47, `WebGPU: yes`. Page served from the Mac over `adb reverse`; model picked from the phone's Downloads with the file input.
+
+| | Phone (web) | Laptop (Ollama) |
+|---|---|---|
+| Model | `gemma-4-E2B-it-web.litertlm` (2.0 GB) | `gemma4:e2b-it-qat` |
+| Runtime | `@litert-lm/core` 0.18.0, WebGPU | Ollama, JSON schema enforced |
+| Model load | 6.7-8.8 s | n/a |
+| Eval | **14/16** | **15/16** |
+| Latency avg / max | **8.8 s / 10.6 s** | **0.9 s / 5.3 s** |
+
+Phone failures (same answers in every run; greedy sampling):
+- `"go back a bit and lie down" -> ["kbk 1","krest"]`: allowed, but the eval wants `kbk` with no count.
+- `"stand up and walk forward for 5 steps, then turn left for 30 degrees" -> ["kbalance 5","kwkL 30"]`: **rejected by the allowlist**, so nothing would reach a robot. The laptop fails the same case differently: `["kbalance","kwkL"]` (it drops `kwkF 5` too, but the schema keeps the codes valid).
+
+Where the phone's time goes: with the system prompt prefilled once and reused (the first `clone()` version), one request took **2.1 s**. With a fresh conversation per request it takes ~8.8 s. So about 7 s per request is re-reading the ~600-token system prompt, which matches the 7.3 s prefill measured on its own.
+
+### Deviations from the plan
+- **Model E2B, not E4B:** the user's choice. E2B is what AI Edge Gallery runs on this phone and what the laptop kit uses. E4B never got past loading, because of the next bug.
+- **`@litert-lm/core` 0.18.0, not 0.18.1:** 0.18.1's JS calls WASM methods its own builds don't have (`Engine.create` fails with `getMutableMainExecutorSettings is not a function`, hidden by `m.delete is not a function` from its cleanup). Found by pausing on exceptions over CDP. 0.18.0 is the pair Google's hosted chat demo ships.
+- **Fresh conversation per request, not `clone()`:** in 0.18.0 the second clone of a prefilled conversation fails with `Dependency task 1 is invalid`. The demo never clones.
+- **`web/package.json`** (`{"type":"module"}`) so `node --test` doesn't warn about module type.
+- **Run eval locks while running:** a double tap ran two evals at once and doubled every latency.
+- Task 4 (Mac Chrome smoke test) was skipped; the phone was tested directly.
+
+### Next decision
+Accuracy is close to the laptop and the allowlist caught the bad output, so the blocker is **speed** (8.8 s vs 0.9 s). Next: reuse the prefilled system prompt without the `clone()` bug (target: ~2 s per request), e.g. clone without deleting clones, or keep one conversation and reset it. If that fails: shorten the prompt. Then the robot link (Web Bluetooth first). Constrained output (`enableConstrainedDecoding` + an `enum` tool) is optional: it would block `kbalance 5`-style codes but not dropped steps.
