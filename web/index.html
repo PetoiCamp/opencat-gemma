@@ -52,6 +52,10 @@ async function load() {
 const textOf = (m) => typeof m.content === "string" ? m.content
   : (m.content ?? []).filter((p) => p.type === "text").map((p) => p.text).join("");
 
+// Dev hook for web/prefill_experiments.js (run over CDP / chrome://inspect). Getters, so it sees the loaded engine.
+window.__test = { get engine() { return engine; }, get prompt() { return prompt; }, get pattern() { return pattern; },
+                  parse, textOf, SamplerType };
+
 // A fresh conversation per request, like the laptop's Ollama call. Cloning one prefilled conversation failed on
 // the second clone in 0.18.0 ("Dependency task 1 is invalid", Pixel 7 Pro, 2026-10-23); the demo never clones.
 async function ask(text) {
