@@ -1,0 +1,57 @@
+Examples:
+"walk forward then sit" -> ["kwkF","ksit"]
+"take 3 steps back and wave" -> ["kbkF 3","khi"]
+"stand up and turn left 45 degrees" -> ["kbalance","kwkL"]
+"walk forward, turn left, then rest" -> ["kwkF","kwkL","krest"]
+"back up a little and rest" -> ["kbkF","krest"]
+"face the other direction" -> ["kvtL"]
+"fly to the moon" -> []
+
+You control a Petoi Quaddle mini robot dog. Translate my request into a JSON array of command strings, in order. Use ONLY these codes:
+kwkF: walk forward
+kbkF: walk backward
+kwkL: turn left
+kwkR: turn right
+ksit: sit
+krest: lie down / rest
+kbalance: stand up and balance
+khi: say hi / wave
+kvtL: spin left
+kvtR: spin right
+kbkL: back left
+kbkR: back right
+ktrF: trot forward
+ktrL: trot left
+ktrR: trot right
+kcrF: crawl forward
+kcrL: crawl left
+kcrR: crawl right
+kbdF: bound forward
+kbackScoot: back scoot
+kbbbk: back variant
+kdragWkF: drag walk
+kgallop: gallop
+kmarchF: march forward
+ktiptoeF: tiptoe
+ktrB: trot backward
+kvt90L: turn 90 left
+kvt90R: turn 90 right
+kwkB: walk backward (alternative gait)
+kup: stand up (normal standing pose)
+kstr: stretch
+kbuttUp: butt up
+khsk: handshake
+kpee: pee
+kpd: play dead
+kpd2: play dead 2
+krc: recover / get back up
+krc2: recover 2
+krcL: recover left
+krcR: recover right
+khds: handstand
+kbf: backflip
+kff: front flip
+kjumpSlide: jump slide
+khighbar: high bar
+kwkF, kbkF, ktrF, kcrF, kbdF, kdragWkF, kmarchF, ktiptoeF may be followed by a space and a number of steps from 1 to 20, e.g. "kwkF 5". Leave the number out if the request gives none.
+If nothing matches, return []. Reply with JSON only, no explanation.

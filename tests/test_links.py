@@ -75,6 +75,38 @@ class FindRobotTest(unittest.TestCase):
         self.assertFalse(sers["/dev/good"].closed)
 
 
+    def test_retries_query_once_when_sleeping_robot_only_wakes(self):
+        """A sleeping Quaddle's first command only wakes it, with no echo (firmware Q_261022, 2026-10-23)."""
+        class SleepySerial(FakeSerial):
+            def write(self, data):
+                if not self.written:
+                    self.written += data
+                    self.pending += b"Charge sleep: serial wake\r\nauto z1\r\n"
+                    return
+                super().write(data)
+        ser = SleepySerial({"?": b"Quaddle\r\nQ_261022\r\n?\r\n"})
+        with mock.patch.object(links.list_ports, "comports", return_value=[SimpleNamespace(vid=1, device="/dev/q")]), \
+             mock.patch.object(links, "open_serial", return_value=ser), \
+             mock.patch.object(links.SerialLink, "send", self._fast_send(links.SerialLink.send)), \
+             redirect_stdout(io.StringIO()):
+            link, robot = find_robot()
+        self.assertEqual(robot, "quaddle")
+        self.assertEqual(ser.written, b"?\n?\n")
+
+    @staticmethod
+    def _fast_send(send):
+        return lambda self, command, timeout=10, done=None: send(self, command, min(timeout, 0.3), done)
+
+    def test_gives_up_after_second_timeout(self):
+        ser = FakeSerial({})
+        with mock.patch.object(links.list_ports, "comports", return_value=[SimpleNamespace(vid=1, device="/dev/x")]), \
+             mock.patch.object(links, "open_serial", return_value=ser), \
+             mock.patch.object(links.SerialLink, "send", self._fast_send(links.SerialLink.send)), \
+             redirect_stdout(io.StringIO()), self.assertRaises(RuntimeError):
+            find_robot()
+        self.assertEqual(ser.written, b"?\n?\n")
+        self.assertTrue(ser.closed)
+
 
 class OpenSerialTest(unittest.TestCase):
     def test_leaves_dtr_and_rts_alone(self):
@@ -122,6 +154,11 @@ class RobotFromReplyTest(unittest.TestCase):
     def test_known_models(self):
         self.assertEqual(robot_from_reply("G | Bittle X | B10_260527 | ?"), "bittle")
         self.assertEqual(robot_from_reply("Nybble Q | N10_260820 | ?"), "nybble")
+        self.assertEqual(robot_from_reply("Petoi Quaddle | u | Quaddle | Q_260529 | ?"), "quaddle")
+        self.assertEqual(robot_from_reply("Quaddle | Q_261022 | ?"), "quaddle")
+
+    def test_first_model_name_wins(self):
+        self.assertEqual(robot_from_reply("Quaddle | not a Bittle"), "quaddle")
 
     def test_unknown(self):
         self.assertIsNone(robot_from_reply("hello | ?"))
@@ -280,6 +317,26 @@ class WifiSetupTest(unittest.TestCase):
         with self.assertRaises(TimeoutError) as e:
             links.wifi_setup(SerialLink(ser), "Lab", "s3cret", timeout=0.2)
         self.assertNotIn("cret", str(e.exception))
+
+
+class RobotNameTest(unittest.TestCase):
+    def test_robot_name_parses_name_before_echo(self):
+        ser = FakeSerial({"n": b"Quaddle03\r\nn\r\n"})
+        self.assertEqual(links.robot_name(SerialLink(ser)), "Quaddle03")
+        self.assertEqual(ser.written, b"n\n")
+
+    def test_rename_sends_n_plus_name(self):
+        ser = FakeSerial({"nTeam7": b"Team7\r\nn\r\n"})
+        self.assertEqual(links.rename_robot(SerialLink(ser), "Team7"), "Team7 | n")
+        self.assertEqual(ser.written, b"nTeam7\n")
+
+    def test_invalid_or_too_long_names_rejected_without_sending(self):
+        for bad in ("", "has space", "a%b", "caf\u00e9", "x" * 17):
+            ser = FakeSerial({})
+            with self.assertRaises(ValueError, msg=bad):
+                links.rename_robot(SerialLink(ser), bad)
+            self.assertEqual(ser.written, b"")
+        links.rename_robot(SerialLink(FakeSerial({"n" + "x" * 16: b"n\r\n"})), "x" * 16)
 
 
 if __name__ == "__main__":

@@ -8,11 +8,12 @@ import serial
 from serial.tools import list_ports
 from websockets.sync.client import connect
 
+from .contract import registry
+
 BAUD = 115200
 WRITE_TIMEOUT_S = 2  # pyUI uses the same
 # The firmware (src/webServer.h) drops a client after 40 s without a heartbeat message; send well inside that.
 HEARTBEAT_S = 15
-MODELS = {"Bittle": "bittle", "Nybble": "nybble"}
 
 
 def open_serial(port):
@@ -56,8 +57,19 @@ class SerialLink:
 
 
 def robot_from_reply(reply):
-    """Map the reply to '?' (e.g. "G | Bittle X | B10_260527 | ?") to a contract name, or None."""
-    return next((robot for name, robot in MODELS.items() if name in reply), None)
+    """Map the reply to '?' (e.g. "G | Bittle X | B10_260527 | ?") to a contract name, or None.
+    The model name that appears first in the reply wins."""
+    found = [(reply.find(model), robot) for robot, (model, _) in registry().items() if model in reply]
+    return min(found)[1] if found else None
+
+
+def _identify(link, timeout=3):
+    """Ask '?' over USB. A sleeping robot (seen on Quaddle) only wakes on the first command and doesn't answer it,
+    so a timeout is retried once."""
+    try:
+        return robot_from_reply(link.send("?", timeout=timeout))
+    except TimeoutError:
+        return robot_from_reply(link.send("?", timeout=timeout))
 
 
 def find_robot():
@@ -70,7 +82,7 @@ def find_robot():
         except (serial.SerialException, OSError):
             continue
         try:
-            robot = robot_from_reply(link.send("?", timeout=3))
+            robot = _identify(link)
         except (TimeoutError, serial.SerialException, OSError):
             robot = None
         if robot:
@@ -113,8 +125,30 @@ def wifi_ip(link, timeout=5):
     return match.group(1) if match else None
 
 
+NAME_RE = re.compile(r"[A-Za-z0-9_-]{1,16}")
+
+
+def robot_name(link, timeout=5):
+    """The robot's stored name, via a bare 'n'. The reply is the name line, then the 'n' echo: "Quaddle03 | n".
+    The robot advertises over Bluetooth as <name>_BLE."""
+    reply = link.send("n", timeout=timeout)
+    parts = [p.strip() for p in reply.split(" | ") if p.strip()]
+    if parts and parts[-1].lower() == "n":
+        parts = parts[:-1]
+    if not parts:
+        raise RuntimeError(f"The robot did not report its name, got {reply!r}")
+    return parts[-1]
+
+
+def rename_robot(link, new, timeout=5):
+    """Set the robot's name with 'n<NAME>' (takes effect after a power cycle). Returns the reply."""
+    if not NAME_RE.fullmatch(new):
+        raise ValueError("A robot name must be 1-16 characters: letters, digits, '-' or '_'")
+    return link.send(f"n{new}", timeout=timeout)
+
+
 def detect_ws_robot(link):
-    """Ask over WebSocket which robot this is. Returns 'bittle'/'nybble', or None if the reply names no model."""
+    """Ask over WebSocket which robot this is. Returns the robot's contract name, or None if the reply names no model."""
     try:
         return robot_from_reply(link.send("?", timeout=5))
     except (TimeoutError, RuntimeError):

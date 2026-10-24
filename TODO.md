@@ -69,3 +69,31 @@ The starter kit currently works around this by never sending turn angles: it tim
 
 1. **WebSocket timing.** Over WebSocket, does `completed` for `kwkF 3` arrive after the 3 cycles finish, as the serial `k` echo does (via `deferSkillTokenEcho`)? Or does it arrive when the gait starts?
 2. **Reboot echo.** After a reboot the firmware prints a lone `k` line first. A host waiting for a command's `k` echo could mistake that for "done". Could the boot banner avoid printing a bare `k`?
+
+### 5. Quaddle (ESP32-S3 firmware), observed on firmware `Q_261022`, 2026-10-23
+
+1. **What does `kvt90L` ("spin 90 left") do?**
+   - It loads like a looping gait: `k` arrives about 0.2 s after sending, and there is no further output.
+   - Does **one cycle** turn about 90°, or is "90" a speed or style variant?
+   - Is it meant to stop by itself after 90°, or to loop until the next command?
+   - The starter kit currently treats it as a timed turn: it sends `kbalance` after 2 s.
+2. **Could step or angle counts apply to turning and backward gaits?**
+   - `kwkF 3` / `kbkF 3` count cycles and then stop (this works well, about 0.5 s per cycle).
+   - Turning (`…L`/`…R`, `kvt90L`) and backward (`…B`, e.g. `ktrB`) gaits loop until the next command.
+   - Supporting `kvt90L 1` (one cycle) or `ktrB 3` would let a host turn or back up a known amount without timing it.
+   - Do angle turns (`kwkL 90`) stop reliably on Quaddle? They never stopped on Bittle X (see section 2).
+3. **Wake-from-sleep swallows the first command.**
+   - When Quaddle is in charge sleep, the first command only wakes it. Its output is `Charge sleep: serial wake`, with no echo, and the command is not run.
+   - Could the wake still run the command, or at least echo the token, so a host doesn't have to retry?
+4. **The first BLE `?` reply has no line breaks.**
+   - The first `?` after a BLE connect returns the handshake as separate notifications, with no newlines between them: `Petoi Quaddle`, `u`, `Quaddle`, `Q_261022`, `?`.
+   - Later `?` replies are normal lines (`Quaddle\r\nQ_261022\r\n?\r\n`).
+   - Could the handshake parts end with `\r\n` too, so hosts can parse every reply line by line?
+5. **Bluetooth stops advertising while charging?**
+   - With the USB cable plugged in, Quaddle was not found in BLE scans for several minutes, even while awake and answering `?` over USB.
+   - After unplugging, it was found immediately. It had advertised once earlier while plugged in.
+   - Is BLE intentionally off during charge or charge-sleep?
+6. **BLE connect behaviour differs from BiBoard firmware.**
+   - BiBoard pushes `Petoi <MODEL>` on connect and forces rest (`d`).
+   - Quaddle stays silent until asked `?`, and does not force rest.
+   - Is the Quaddle behaviour the intended direction for all robots? Hosts currently have to support both.

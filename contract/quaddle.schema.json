@@ -1,0 +1,7 @@
+{
+  "type": "array",
+  "items": {
+    "type": "string",
+    "pattern": "^((kwkF|kbkF|ktrF|kcrF|kbdF|kdragWkF|kmarchF|ktiptoeF)( ([1-9]|1[0-9]|20))?|kwkL|kwkR|ksit|krest|kbalance|khi|kvtL|kvtR|kbkL|kbkR|ktrL|ktrR|kcrL|kcrR|kbackScoot|kbbbk|kgallop|ktrB|kvt90L|kvt90R|kwkB|kup|kstr|kbuttUp|khsk|kpee|kpd|kpd2|krc|krc2|krcL|krcR|khds|kbf|kff|kjumpSlide|khighbar)$"
+  }
+}

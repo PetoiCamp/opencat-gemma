@@ -1,4 +1,4 @@
-"""Accuracy and latency of Gemma on eval/cases.json. Needs Ollama running. Exit 0 if every case passes."""
+"""Accuracy and latency of Gemma on eval/cases.<robot>.json (else eval/cases.json). Needs Ollama running. Exit 0 if every case passes."""
 import argparse
 import json
 import sys
@@ -14,7 +14,11 @@ p.add_argument("--robot", choices=ROBOTS, default="bittle")
 p.add_argument("--model", default=MODEL)
 args = p.parse_args()
 contract = load(args.robot)
-cases = json.loads((Path(__file__).parent / "cases.json").read_text())
+cases_file = Path(__file__).parent / f"cases.{args.robot}.json"
+if not cases_file.exists():
+    cases_file = Path(__file__).parent / "cases.json"
+cases = json.loads(cases_file.read_text())
+print(f"{args.robot}: {cases_file.name}")
 
 passed, times = 0, []
 for text, acceptable in cases:

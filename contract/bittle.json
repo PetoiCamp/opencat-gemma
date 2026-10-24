@@ -1,5 +1,7 @@
 {
   "robot": "Bittle X robot dog",
+  "model": "Bittle",
+  "ble_prefix": "bittle",
   "codes": {
     "kwkF": {
       "meaning": "walk forward",

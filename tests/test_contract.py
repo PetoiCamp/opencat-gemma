@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from opencat_gemma.contract import CONTRACT_DIR, ROBOTS, Contract, load
+from opencat_gemma.contract import CONTRACT_DIR, ROBOTS, Contract, load, registry
 
 
 class ContractTest(unittest.TestCase):
@@ -31,6 +31,11 @@ class ContractTest(unittest.TestCase):
             c = load(robot)
             self.assertEqual((CONTRACT_DIR / f"{robot}.prompt.txt").read_text(), c.prompt + "\n", robot)
             self.assertEqual(json.loads((CONTRACT_DIR / f"{robot}.schema.json").read_text()), c.schema, robot)
+
+    def test_robots_and_registry_come_from_contract_files(self):
+        self.assertEqual(ROBOTS, ("bittle", "nybble", "quaddle"))
+        self.assertEqual(registry(), {"bittle": ("Bittle", "bittle"), "nybble": ("Nybble", "nybble"),
+                                      "quaddle": ("Quaddle", "quaddle")})
 
     def test_unknown_kind_rejected(self):
         data = {"robot": "x", "codes": {"kwkL": {"meaning": "turn left", "kind": "time"}}, "examples": []}

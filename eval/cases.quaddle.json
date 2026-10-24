@@ -1,0 +1,18 @@
+[
+  ["walk forward then sit", [["kwkF", "ksit"]]],
+  ["stand up then sit", [["kbalance", "ksit"], ["kup", "ksit"]]],
+  ["say hello to everyone", [["khi"]]],
+  ["walk backward 2 steps", [["kbkF 2"]]],
+  ["go back a bit and lie down", [["kbkF", "krest"]]],
+  ["go back 2 steps and lie down", [["kbkF 2", "krest"]]],
+  ["stand up, turn left, then wave", [["kbalance", "kwkL", "khi"], ["kup", "kwkL", "khi"]]],
+  ["stand up and walk forward for 5 steps, then turn left for 30 degrees", [["kbalance", "kwkF 5", "kwkL"], ["kup", "kwkF 5", "kwkL"]]],
+  ["walk forward, turn right, walk forward, then sit", [["kwkF", "kwkR", "kwkF", "ksit"]]],
+  ["turn around", [["kwkL"], ["kwkR"], ["kvtL"], ["kvtR"], ["kvt90L"], ["kvt90R"]]],
+  ["sit down", [["ksit"]]],
+  ["take a nap", [["krest"]]],
+  ["do a backflip", [["kbf"]]],
+  ["make me a sandwich", [[]]],
+  ["shake hands", [["khsk"]]],
+  ["play dead", [["kpd"]]]
+]

@@ -1,6 +1,6 @@
 # Robot protocol notes
 
-What the starter relies on, and how sure we are of each part. Firmware tested: B10_260527 on a Bittle X, over USB.
+What the starter relies on, and how sure we are of each part. Firmware tested: B10_260527 on a Bittle X, over USB. Quaddle (ESP32-S3 firmware family, Q_261022) was checked on 2026-10-23 for `?` over USB and Bluetooth LE and for step-count walks over USB; its notes are marked "Quaddle".
 
 ## Serial
 
@@ -32,7 +32,9 @@ reply:  G
         ?
 ```
 
-`find_robot` probes USB serial ports that report a vendor id, sends `?`, keeps the first port whose reply contains "Bittle" or "Nybble", and closes every other port it opened.
+`find_robot` probes USB serial ports that report a vendor id, sends `?`, keeps the first port whose reply contains a contract's `model` name ("Bittle", "Nybble", "Quaddle"), and closes every other port it opened.
+
+**Wake retry (Quaddle).** A Quaddle in charge sleep only wakes on the first command: it prints `Charge sleep: serial wake` and sends no echo, and the command is not run. So if the first `?` gets no echo within 3 s, `find_robot` sends `?` once more (3 s again). The second `?` was answered in 0.06 s with `Quaddle | Q_261022 | ?`. Opening the port does not reboot a Quaddle.
 
 ## Gait arguments
 
@@ -45,6 +47,7 @@ reply:  G
   ```
 
   `kbk N` takes the same code path in the firmware source (read, not run on hardware).
+- **Quaddle:** `kwkF 3` and `kbkF 3` count cycles (about 0.5 s each), stand up, and echo `k` at the end, the same as Bittle X. Its backward (`…B`) and turning (`…L`/`…R`) gaits loop until the next command, so they are timed turns. Whether `kvt90L` stops by itself is not known, so it is timed too.
 - Values under 200 are cycles; 200 or more are milliseconds. This comes from reading the firmware; only the cycle case was run.
 - **Angle turns never stop.** With `kwkL 90` the yaw read `5363.72` (outside +-180), the turn never ended, and the robot had to be power-cycled. With a gyro, a number after a turn is always read as degrees, so timed turns are not possible either.
 - **So turns are sent bare** (`kwkL` / `kwkR`). A bare gait echoes `k` right away and keeps going until the next command. The starter waits `--turn-seconds` (default 2.0), then sends `kbalance`. The allowlist rejects turn angles.
@@ -75,11 +78,20 @@ reply:  G
 
 The starter uses Bluetooth LE through `bleak` (`opencat_gemma/ble.py`). No pairing is needed.
 
-- **Names:** the robot advertises as `Bittle0D_BLE`; macOS has also shown the same robot as `Bittle0D_SSP` (a cached name). So names are matched by prefix (`bittle`/`nybble`, case-insensitive), and candidates are tried strongest signal first.
+- **Names:** the robot advertises as `Bittle0D_BLE`; macOS has also shown the same robot as `Bittle0D_SSP` (a cached name). A Quaddle advertised as `Quaddle03_BLE`. So names are matched by prefix (each contract's `ble_prefix`, plus `petoi` for the `Petoi_BLE` fallback name; case-insensitive), and candidates are tried strongest signal first.
 - **Nordic UART service** `6E400001-B5A3-F393-E0A9-E50E24DCCA9E`:
   - the client writes commands (`command + "\n"`, without response) to RX `6E400002-...`;
   - the robot notifies replies on TX `6E400003-...`. Notifications can split a line anywhere, so the link joins them and only complete lines count.
-- **Handshake** (firmware `bleUart.h` `detectBle()`): after subscribing to TX, the firmware sends `Petoi <MODEL>` and then **forces rest**. Seen: `b"Petoi Bittle Xpg\r\nrest\r\nd\r\n"`. A command sent before the `d` line is overwritten, so `BleLink.connect()` waits up to 8 s for `d`; if only the model name arrived, it continues. The greeting names the model, so no `?` is needed. The robot therefore lies down on connect; the first command makes it stand.
+- **Handshake: two styles.**
+  - **ESP32 (BiBoard) firmware** (`bleUart.h` `detectBle()`): after subscribing to TX, the firmware sends `Petoi <MODEL>` and then **forces rest**. Seen: `b"Petoi Bittle Xpg\r\nrest\r\nd\r\n"`. A command sent before the `d` line is overwritten. The robot therefore lies down on connect; the first command makes it stand.
+  - **ESP32-S3 firmware (Quaddle):** nothing is sent on connect and there is no forced rest. The robot answers only when asked `?`. The **first** `?` after connecting gets a handshake reply sent as separate notifications **with no line breaks**: seen `Petoi QuaddleuQuaddleQ_261022?` (`Petoi Quaddle`, `u`, `Quaddle`, the version, `?`). Later `?` replies are normal lines (`Quaddle\r\nQ_261022\r\n?\r\n`). Writing with or without response made no visible difference.
+  - **So `BleLink.connect()` works with both:**
+    1. Subscribe, then wait up to 2 s for any pushed text.
+    2. If something arrives (ESP32 style), wait up to 8 s for the `d` line; if it doesn't come, carry on.
+    3. Clear the buffer and **always send `?`**.
+    4. Accept the reply when a complete line is `?`, or when the text contains `Petoi` and ends with `?` (the S3 handshake without line breaks). Give up after 5 s.
+    5. `find_ble_robot()` identifies the robot from that reply.
+  - On an S3 robot this adds the 2 s push wait to the connect. Always asking `?` after the ESP32 greeting is verified on Bittle X (`--bluetooth --name Bittle0D`, chat works, 2026-10-23).
 - Measured (Bittle X, macOS, 2026-10-23):
   - the scan finds the robot and it connects in 0.6 s;
   - `find_ble_robot()` takes about 17 s in total (an 8 s scan, the connect, and the greeting wait);
@@ -96,6 +108,12 @@ SPP shows up as a serial port (`/dev/cu.<uniqueName>_SSP`, firmware `bluetoothMa
 - A pairing for a different robot (`/dev/cu.BittleEE_SSP`) opened in about 1 s but never answered.
 
 SPP discovery was therefore removed. A paired port can still be used by hand with `--port`; it may work. `WRITE_TIMEOUT_S` stays so a dead port raises instead of blocking a write.
+
+## Robot name (`n`)
+
+- A bare `n` returns the robot's stored name, then the `n` echo. Verified on Quaddle over USB (2026-10-23): `SerialLink.send("n", 4)` returned `Quaddle03 | n`.
+- `n<NAME>` (at most 16 characters) sets a new name. It takes effect after the robot is switched off and on. Renaming is not yet verified on hardware.
+- The robot advertises over Bluetooth LE as `<name>_BLE`, e.g. `Quaddle03_BLE`. `--bluetooth --name <name>` matches `<name>` or `<name>_BLE`. Selecting a robot by name over Bluetooth is verified (Quaddle03 with Bittle0D nearby, 2026-10-23).
 
 ## Robot Wi-Fi
 
@@ -143,6 +161,8 @@ Dated 2026-10-23.
 **Bluetooth LE (Bittle X, macOS, 2026-10-23):** the scan finds the robot, and it connects in 0.6 s. Chat mode works (stand/sit, walking, Ctrl+C).
 
 **Wi-Fi (Bittle X, macOS, 2026-10-23):** `--wifi-setup` works over BLE. Detection and chat mode work over WebSocket, including Ctrl+C with the retry. (Classic SPP answered `?` once, then failed; see above.)
+
+**Quaddle (firmware Q_261022, macOS, 2026-10-23):** `?` over USB (after the wake retry) and over Bluetooth LE (the handshake reply above); `kwkF 3` / `kbkF 3` step counts; `ktrB` loops until `kbalance`; `kbalance` stops `kwkL`. These were checked with direct commands; the starter's chat mode, its Bluetooth connect and Wi-Fi have not yet been run on a Quaddle.
 
 **Not yet verified:**
 - Nybble Q.

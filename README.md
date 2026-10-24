@@ -1,6 +1,16 @@
 # opencat-gemma
 
-Talk to a Petoi robot (Bittle X or Nybble Q) with Gemma running 100% on-device.
+Talk to a Petoi robot (Bittle X, Nybble Q or Quaddle) with Gemma running 100% on-device.
+
+## Supported robots
+
+| Robot | Firmware family | Verified on hardware |
+|---|---|---|
+| Bittle X | ESP32 (BiBoard) | USB, Bluetooth LE and Wi-Fi, chat mode end to end (macOS, firmware B10_260527) |
+| Nybble Q | ESP32 (BiBoard) | Not yet verified on hardware |
+| Quaddle | ESP32-S3 | Firmware Q_261022 (2026-10-23). Verified: USB detection; Bluetooth LE detection, including choosing it by name (`--bluetooth --name Quaddle03`) with a Bittle also nearby; chat over Bluetooth (stand/sit, `kwkF 3`, `kbkF 2`, timed turn, Ctrl+C stop). Wi-Fi: `--wifi-setup` over USB, detection over WebSocket, chat (stand/sit, `kwkF 3`), and the Ctrl+C stop with retry. |
+
+Each robot is one `contract/<robot>.json` (see "Adding a robot").
 
 A starter kit for hackathon teams. Everything here runs on your laptop: Gemma through [Ollama](https://ollama.com), then USB serial or Wi-Fi to the robot. No cloud calls.
 
@@ -51,7 +61,7 @@ Chatting with bittle. Ctrl+C stops a move; Ctrl+D (or Ctrl+C here) quits.
 Bittle> walk forward then sit
 ```
 
-The robot is detected over USB by sending `?`. This detection only happens without `--port`, `--ws` or `--dry-run`. `--dry-run` and `--port` default to Bittle, so use `--robot nybble` for a Nybble. With `--ws` and no `--robot`, the model is detected over Wi-Fi, falling back to Bittle with a warning. Type a request at the `Bittle>` prompt (or `Nybble>`). Ctrl+C during a move stops the robot. To quit chat: Ctrl+D (macOS/Linux) or Ctrl+Z then Enter (Windows); Ctrl+C at the prompt also quits.
+The robot is detected over USB by sending `?`. This detection only happens without `--port`, `--ws` or `--dry-run`. `--dry-run` and `--port` default to Bittle, so use `--robot nybble` or `--robot quaddle` for the others. With `--ws` and no `--robot`, the model is detected over Wi-Fi, falling back to Bittle with a warning. Type a request at the `Bittle>` prompt (or `Nybble>`, `Quaddle>`). Ctrl+C during a move stops the robot. To quit chat: Ctrl+D (macOS/Linux) or Ctrl+Z then Enter (Windows); Ctrl+C at the prompt also quits.
 
 Port names differ by OS if you pass `--port`: macOS `/dev/cu.usbserial-...`, Windows `COM3`-style, Linux `/dev/ttyUSB0` or `/dev/ttyACM0`.
 
@@ -64,12 +74,13 @@ Other ways to run it:
 # No robot needed: show what Gemma returned and what would be sent
 .venv/bin/python -m opencat_gemma --dry-run "walk forward then sit"
 .venv/bin/python -m opencat_gemma --dry-run --robot nybble "say hi"
+.venv/bin/python -m opencat_gemma --dry-run --robot quaddle "walk backward 2 steps"
 
 # Wi-Fi instead of USB (see "Connect without a cable")
 .venv/bin/python -m opencat_gemma --ws ws://192.168.1.50:81 "walk forward then sit"
 ```
 
-Flags: `--robot {bittle,nybble}`, `--port PORT`, `--bluetooth`, `--wifi-setup`, `--ws URL`, `--model MODEL`, `--turn-seconds N` (default 2.0), `--dry-run`. Run with `--help` for details.
+Flags: `--robot {bittle,nybble,quaddle}`, `--port PORT`, `--bluetooth`, `--name NAME`, `--robot-name [NEW]`, `--wifi-setup`, `--ws URL`, `--model MODEL`, `--turn-seconds N` (default 2.0), `--dry-run`. Run with `--help` for details.
 
 If Ollama is not running or the model is missing, you get a message telling you what to run (`ollama serve` or `ollama pull ...`).
 
@@ -78,8 +89,10 @@ If Ollama is not running or the model is missing, you get a message telling you 
 Both were checked on Bittle X with macOS (2026-10-23). Windows and Linux are not yet verified.
 
 **Bluetooth (BLE, no pairing needed)**
-- Run `.venv/bin/python -m opencat_gemma --bluetooth`. The robot is found by scanning for a `Bittle...` or `Nybble...` name (about 8 s), strongest signal first.
-- **The robot lies down (rests) when Bluetooth connects.** This is firmware behaviour. The first command makes it stand.
+- **Before you start (any Petoi robot):** if the robot shows up as *connected* in your computer's Bluetooth device list (macOS: System Settings → Bluetooth), disconnect it there, or remove it, first. Our tool makes its own connection. Once the system connection is gone, running `--bluetooth` makes the system ask for Bluetooth permission; allow it. (Observed on macOS with Quaddle, 2026-10-23.)
+- Run `.venv/bin/python -m opencat_gemma --bluetooth`. With several robots nearby, use `--bluetooth --name <name>` instead (see "Several robots in one room" below). The robot is found by scanning for a `Bittle...`, `Nybble...`, `Quaddle...` or `Petoi...` name (about 8 s), strongest signal first, and identified with `?`.
+- **Bittle X and Nybble Q lie down (rest) when Bluetooth connects.** This is firmware behaviour. The first command makes them stand. Quaddle does not.
+- **Quaddle may stop advertising Bluetooth while plugged in and charging.** It was not found with the USB cable connected, and was found right after unplugging it (2026-10-23). If `--bluetooth` can't find a Quaddle, unplug the cable, or power-cycle it.
 - Close the Petoi phone app first. Only one BLE client can be connected at a time.
 - Verified on macOS (Bittle X, 2026-10-23):
   - the robot is found automatically (about 15-20 s, mostly scanning);
@@ -87,6 +100,16 @@ Both were checked on Bittle X with macOS (2026-10-23). Windows and Linux are not
   - chat mode works end to end: stand up and sit, walking with steps, and the Ctrl+C stop.
 - Windows and Linux are not yet verified.
 - Alternative: pair the robot's Classic Bluetooth `<name>_SSP` device and use `--port <that port>`. This may work, but it was unreliable on macOS (see `docs/protocol.md`).
+
+**Several robots in one room**
+- `--bluetooth` on its own connects only if exactly one Petoi robot is nearby. If there are several, it refuses to guess: it lists them with their signal strength and exits, so you never end up driving someone else's robot.
+- Always connect with your robot's name:
+  1. Over USB, run `.venv/bin/python -m opencat_gemma --robot-name`. It prints your robot's Bluetooth name (for example `Quaddle03_BLE`) and the command to connect.
+  2. Optional: give it your team name with `--robot-name Team7` (at most 16 characters: letters, digits, `-` and `_`), then switch the robot off and on. It then advertises as `Team7_BLE`.
+  3. Connect with `.venv/bin/python -m opencat_gemma --bluetooth --name Team7`. The name is matched exactly, with or without `_BLE`, ignoring upper/lower case.
+- `--robot-name` also works with `--port` or `--bluetooth --name <name>`.
+- Status: reading the name over USB on a Quaddle is verified (2026-10-23). Choosing a robot by name over Bluetooth is verified too (Quaddle03 picked with Bittle0D nearby; the bare `--bluetooth` refused and listed both). Renaming is **not yet verified on hardware**.
+- The note above still applies: disconnect the robot in your computer's Bluetooth device list first.
 
 **Wi-Fi**
 - **The network must be 2.4 GHz.** The robot's ESP32 chip can't join 5 GHz networks. Many routers broadcast both bands under one name; if joining fails, use the router's 2.4 GHz network (sometimes a separate name, e.g. ending in "-2.4G"). Phone hotspots often default to 5 GHz, so switch them to 2.4 GHz ("maximize compatibility" on iPhone).
@@ -107,11 +130,17 @@ Both were checked on Bittle X with macOS (2026-10-23). Windows and Linux are not
 
 ## Commands
 
-Bittle X has 69 commands and Nybble Q has 52. Most are shared; Bittle X also has the flips, roll, jump, and some gaits (`kgp*`, `kph*`, `kmw`, and others). Nybble Q has a few of its own. Examples are below; `contract/bittle.json` and `contract/nybble.json` are the full source of truth (see [contract/README.md](contract/README.md)).
+Bittle X has 69 commands, Nybble Q 52 and Quaddle 45. Most are shared; Bittle X also has the flips, roll, jump, and some gaits (`kgp*`, `kph*`, `kmw`, and others). Nybble Q has a few of its own. Examples are below; `contract/<robot>.json` is the full source of truth (see [contract/README.md](contract/README.md)).
+
+**Quaddle differences:**
+- It walks backward with `kbkF` (Bittle X and Nybble Q use `kbk`).
+- It has its own gaits: `kmarchF`, `ktiptoeF`, `kdragWkF` (steps), and `ktrB`, `kwkB`, `kbbbk`, `kgallop`, `kbackScoot`, `kvt90L`/`kvt90R` (timed).
+- Its own behaviours include `kpd2`, `krc2`, `krcL`/`krcR`, `kjumpSlide` and `khighbar`.
+- It has none of `kvtF`, `kpu`, `kfiv`, `knd`, `kwh`, `kbx`, `ktbl` or the `kflip*` codes.
 
 | Group | Examples | Notes |
 |---|---|---|
-| Walking, steps | `kwkF`, `kbk`, `ktrF`, `kcrF`, `kvtF` | Optional count 1-20 (default 3). Codes ending in `F` are steps. |
+| Walking, steps | `kwkF`, `kbk` (Quaddle: `kbkF`), `ktrF`, `kcrF`, `kvtF` | Optional count 1-20 (default 3). Codes ending in `F` are steps. |
 | Walking, timed | `kwkL`, `kwkR`, `kvtL`, `kvtR`, `ktrL`, `kcrR` | The computer waits (default 2.0 s), then sends `kbalance`. |
 | Postures | `ksit`, `krest`, `kbalance`, `kup`, `kstr`, `ktbl`, `krc` | Sit, lie down, stand, stretch, table, recover. |
 | Behaviors | `khi`, `khsk`, `kfiv`, `knd`, `kpu`, `kpd`, `kwh`, `kbx` | Wave, handshake, high five, nod, push ups, play dead, wave head, boxing. |
@@ -152,6 +181,8 @@ Bluetooth LE and Wi-Fi (macOS, Bittle X, 2026-10-23):
 
 Not yet verified on hardware:
 - Nybble Q.
+- Quaddle beyond the checks in "Supported robots": whether `kvt90L` stops by itself (it is treated as a timed turn).
+- The changed Bluetooth connect (it now always asks `?`) on Bittle X.
 - Windows and Linux (USB and Bluetooth).
 
 Gemma accuracy and latency can be checked without a robot (see below).
@@ -159,10 +190,27 @@ Gemma accuracy and latency can be checked without a robot (see below).
 ## Build your own
 
 - **Any language:** `contract/<robot>.prompt.txt` (system prompt) and `contract/<robot>.schema.json` (output schema) are checked in. Always validate Gemma's reply against the schema's regex before sending anything to a robot.
-- **Check Gemma on your machine:** `.venv/bin/python eval/run_eval.py --robot bittle` runs the requests in `eval/cases.json` against Ollama and prints pass/fail and latency. Use `--robot nybble` for the other contract.
+- **Check Gemma on your machine:** `.venv/bin/python eval/run_eval.py --robot bittle` runs the requests in `eval/cases.<robot>.json` (or `eval/cases.json` if there is none) against Ollama and prints pass/fail and latency. Use `--robot nybble` or `--robot quaddle` for the other contracts.
 - **Tests:** `.venv/bin/python -m unittest discover tests` (no Ollama or robot needed).
 - **Protocol notes:** [docs/protocol.md](docs/protocol.md).
 - **Android (LiteRT + BLE):** coming. Not available yet.
+
+## Adding a robot
+
+A new robot needs data files, not code changes:
+
+1. **Write `contract/<robot>.json`** with `robot` (the prompt's name, e.g. "Bittle X robot dog"), `model` (the name the robot reports to `?`), `ble_prefix` (the start of its Bluetooth name, lowercase), and `examples`.
+2. **Generate its `codes`** with `tools/build_contract.py`. It takes Petoi's public web-coding skill list (`motion_skills.js` and `translations.js`) and keeps only the codes in your firmware's skill table:
+
+   ```bash
+   .venv/bin/python tools/build_contract.py --robot <robot> --firmware <firmware skill-table header> --web <dir>
+   ```
+
+   First add the robot's entry (core codes, exclusions, label fixes, kind rules) to `ROBOTS` in `tools/build_contract.py`.
+3. **Regenerate the prompt and schema:** `.venv/bin/python -m opencat_gemma.contract`.
+4. **Add `eval/cases.<robot>.json`** using that robot's codes, run `eval/run_eval.py --robot <robot>`, and tune only `examples` until every case passes.
+
+The CLI's `--robot` choices, `?` detection and the Bluetooth scan all read the contract files.
 
 ## Extension modules: ideas for Gemma projects
 

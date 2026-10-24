@@ -1,4 +1,6 @@
 import io
+import shlex
+import sys
 import unittest
 from contextlib import redirect_stdout
 from unittest import mock
@@ -14,6 +16,12 @@ class CliTest(unittest.TestCase):
             cli.main(["--dry-run", "--robot", "bittle", "stand up, walk, turn left"])
         find.assert_not_called()
         self.assertIn("would send: kbalance, kwkF 3, kwkL (then kbalance after 2.0s)", out.getvalue())
+
+    def test_quaddle_is_a_robot_choice(self):
+        out = io.StringIO()
+        with mock.patch.object(cli, "ask", return_value='["kbkF 2"]'), redirect_stdout(out):
+            cli.main(["--dry-run", "--robot", "quaddle", "walk backward 2 steps"])
+        self.assertIn("would send: kbkF 2", out.getvalue())
 
     def test_rejected_output_exits_nonzero(self):
         with mock.patch.object(cli, "ask", return_value="UART: kwh"), redirect_stdout(io.StringIO()):
@@ -133,6 +141,92 @@ class ChatTest(unittest.TestCase):
              mock.patch.object(cli, "find_robot", return_value=(link, "bittle")), redirect_stdout(io.StringIO()):
             with self.assertRaises(RuntimeError):
                 cli.main(["sit"])
+        self.assertTrue(link.closed)
+
+
+
+
+class BluetoothNameTest(unittest.TestCase):
+    def test_bluetooth_with_name_passes_it_through(self):
+        link = FakeLink()
+        with mock.patch.object(cli, "find_ble_robot", return_value=(link, "bittle")) as find, \
+             mock.patch.object(cli, "ask", return_value='["ksit"]'), redirect_stdout(io.StringIO()):
+            cli.main(["--bluetooth", "--name", "Team7", "sit"])
+        find.assert_called_once_with(name="Team7")
+
+    def test_bluetooth_request_is_not_taken_as_name(self):
+        link, asked = FakeLink(), []
+        with mock.patch.object(cli, "find_ble_robot", return_value=(link, "bittle")) as find, \
+             mock.patch.object(cli, "ask", side_effect=lambda c, t, model: asked.append(t) or '["ksit"]'), \
+             redirect_stdout(io.StringIO()):
+            cli.main(["--bluetooth", "walk forward"])
+        find.assert_called_once_with()
+        self.assertEqual(asked, ["walk forward"])
+
+    def test_name_without_bluetooth_errors(self):
+        with mock.patch("sys.stderr", io.StringIO()), self.assertRaises(SystemExit) as e:
+            cli.main(["--name", "Team7", "sit"])
+        self.assertEqual(e.exception.code, 2)
+
+    def test_wifi_setup_with_bluetooth_name(self):
+        link = FakeLink()
+        with mock.patch.object(cli, "find_ble_robot", return_value=(link, "bittle")) as find, \
+             mock.patch.object(cli, "wifi_setup", return_value="192.168.1.50"), \
+             mock.patch("builtins.input", return_value="Lab"), \
+             mock.patch.object(cli.getpass, "getpass", return_value="x"), redirect_stdout(io.StringIO()):
+            cli.main(["--wifi-setup", "--bluetooth", "--name", "Team7"])
+        find.assert_called_once_with(name="Team7")
+
+    def test_wifi_ip_with_bluetooth_name(self):
+        link = FakeLink()
+        with mock.patch.object(cli, "find_ble_robot", return_value=(link, "bittle")) as find, \
+             mock.patch.object(cli, "wifi_ip", return_value="10.0.0.7"), redirect_stdout(io.StringIO()):
+            cli.main(["--wifi-ip", "--bluetooth", "--name", "Team7"])
+        find.assert_called_once_with(name="Team7")
+
+    def test_multiple_robots_exits_with_message_not_traceback(self):
+        err = ble_error = cli.MultipleRobotsError("Several Petoi robots are nearby: A, B.")
+        with mock.patch.object(cli, "find_ble_robot", side_effect=err):
+            with self.assertRaises(SystemExit) as e:
+                cli.main(["--bluetooth", "sit"])
+        self.assertEqual(e.exception.code, str(ble_error))
+
+
+class RobotNameCliTest(unittest.TestCase):
+    def test_prints_bluetooth_name_and_connect_hint(self):
+        link, out = FakeLink(), io.StringIO()
+        with mock.patch.object(cli, "find_robot", return_value=(link, "quaddle")), \
+             mock.patch.object(cli, "robot_name", return_value="Quaddle03"), redirect_stdout(out):
+            cli.main(["--robot-name"])
+        # The hint names the interpreter actually running (quoted), not a bare "python" that may lack our
+        # packages: a bare "python" hint led to ModuleNotFoundError: bleak (2026-10-23).
+        run = f"{shlex.quote(sys.executable)} -m opencat_gemma"
+        self.assertEqual(out.getvalue().splitlines(), ["Your robot's Bluetooth name: Quaddle03_BLE",
+                                                       f"Connect with: {run} --bluetooth --name Quaddle03"])
+        self.assertTrue(link.closed)
+
+    def test_rename_prints_power_cycle_hint(self):
+        link, out = FakeLink(), io.StringIO()
+        with mock.patch.object(cli, "find_robot", return_value=(link, "quaddle")), \
+             mock.patch.object(cli, "rename_robot", return_value="Team7 | n") as rename, redirect_stdout(out):
+            cli.main(["--robot-name", "Team7"])
+        rename.assert_called_once_with(link, "Team7")
+        self.assertEqual(out.getvalue().strip(),
+                         "Renamed to Team7. Switch the robot off and on, then connect with --bluetooth --name Team7")
+        self.assertTrue(link.closed)
+
+    def test_over_bluetooth_with_name(self):
+        link = FakeLink()
+        with mock.patch.object(cli, "find_ble_robot", return_value=(link, "quaddle")) as find, \
+             mock.patch.object(cli, "robot_name", return_value="Team7"), redirect_stdout(io.StringIO()):
+            cli.main(["--robot-name", "--bluetooth", "--name", "Team7"])
+        find.assert_called_once_with(name="Team7")
+
+    def test_over_port(self):
+        link = FakeLink()
+        with mock.patch.object(cli, "open_serial"), mock.patch.object(cli, "SerialLink", return_value=link), \
+             mock.patch.object(cli, "robot_name", return_value="Bittle0D"), redirect_stdout(io.StringIO()):
+            cli.main(["--robot-name", "--port", "/dev/x"])
         self.assertTrue(link.closed)
 
 

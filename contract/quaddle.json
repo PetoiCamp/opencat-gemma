@@ -1,0 +1,235 @@
+{
+  "robot": "Quaddle mini robot dog",
+  "model": "Quaddle",
+  "ble_prefix": "quaddle",
+  "codes": {
+    "kwkF": {
+      "meaning": "walk forward",
+      "kind": "steps"
+    },
+    "kbkF": {
+      "meaning": "walk backward",
+      "kind": "steps"
+    },
+    "kwkL": {
+      "meaning": "turn left",
+      "kind": "timed"
+    },
+    "kwkR": {
+      "meaning": "turn right",
+      "kind": "timed"
+    },
+    "ksit": {
+      "meaning": "sit",
+      "kind": "once"
+    },
+    "krest": {
+      "meaning": "lie down / rest",
+      "kind": "once"
+    },
+    "kbalance": {
+      "meaning": "stand up and balance",
+      "kind": "once"
+    },
+    "khi": {
+      "meaning": "say hi / wave",
+      "kind": "once"
+    },
+    "kvtL": {
+      "meaning": "spin left",
+      "kind": "timed"
+    },
+    "kvtR": {
+      "meaning": "spin right",
+      "kind": "timed"
+    },
+    "kbkL": {
+      "meaning": "back left",
+      "kind": "timed"
+    },
+    "kbkR": {
+      "meaning": "back right",
+      "kind": "timed"
+    },
+    "ktrF": {
+      "meaning": "trot forward",
+      "kind": "steps"
+    },
+    "ktrL": {
+      "meaning": "trot left",
+      "kind": "timed"
+    },
+    "ktrR": {
+      "meaning": "trot right",
+      "kind": "timed"
+    },
+    "kcrF": {
+      "meaning": "crawl forward",
+      "kind": "steps"
+    },
+    "kcrL": {
+      "meaning": "crawl left",
+      "kind": "timed"
+    },
+    "kcrR": {
+      "meaning": "crawl right",
+      "kind": "timed"
+    },
+    "kbdF": {
+      "meaning": "bound forward",
+      "kind": "steps"
+    },
+    "kbackScoot": {
+      "meaning": "back scoot",
+      "kind": "timed"
+    },
+    "kbbbk": {
+      "meaning": "back variant",
+      "kind": "timed"
+    },
+    "kdragWkF": {
+      "meaning": "drag walk",
+      "kind": "steps"
+    },
+    "kgallop": {
+      "meaning": "gallop",
+      "kind": "timed"
+    },
+    "kmarchF": {
+      "meaning": "march forward",
+      "kind": "steps"
+    },
+    "ktiptoeF": {
+      "meaning": "tiptoe",
+      "kind": "steps"
+    },
+    "ktrB": {
+      "meaning": "trot backward",
+      "kind": "timed"
+    },
+    "kvt90L": {
+      "meaning": "turn 90 left",
+      "kind": "timed"
+    },
+    "kvt90R": {
+      "meaning": "turn 90 right",
+      "kind": "timed"
+    },
+    "kwkB": {
+      "meaning": "walk backward (alternative gait)",
+      "kind": "timed"
+    },
+    "kup": {
+      "meaning": "stand up (normal standing pose)",
+      "kind": "once"
+    },
+    "kstr": {
+      "meaning": "stretch",
+      "kind": "once"
+    },
+    "kbuttUp": {
+      "meaning": "butt up",
+      "kind": "once"
+    },
+    "khsk": {
+      "meaning": "handshake",
+      "kind": "once"
+    },
+    "kpee": {
+      "meaning": "pee",
+      "kind": "once"
+    },
+    "kpd": {
+      "meaning": "play dead",
+      "kind": "once"
+    },
+    "kpd2": {
+      "meaning": "play dead 2",
+      "kind": "once"
+    },
+    "krc": {
+      "meaning": "recover / get back up",
+      "kind": "once"
+    },
+    "krc2": {
+      "meaning": "recover 2",
+      "kind": "once"
+    },
+    "krcL": {
+      "meaning": "recover left",
+      "kind": "once"
+    },
+    "krcR": {
+      "meaning": "recover right",
+      "kind": "once"
+    },
+    "khds": {
+      "meaning": "handstand",
+      "kind": "once"
+    },
+    "kbf": {
+      "meaning": "backflip",
+      "kind": "once"
+    },
+    "kff": {
+      "meaning": "front flip",
+      "kind": "once"
+    },
+    "kjumpSlide": {
+      "meaning": "jump slide",
+      "kind": "once"
+    },
+    "khighbar": {
+      "meaning": "high bar",
+      "kind": "once"
+    }
+  },
+  "examples": [
+    [
+      "walk forward then sit",
+      [
+        "kwkF",
+        "ksit"
+      ]
+    ],
+    [
+      "take 3 steps back and wave",
+      [
+        "kbkF 3",
+        "khi"
+      ]
+    ],
+    [
+      "stand up and turn left 45 degrees",
+      [
+        "kbalance",
+        "kwkL"
+      ]
+    ],
+    [
+      "walk forward, turn left, then rest",
+      [
+        "kwkF",
+        "kwkL",
+        "krest"
+      ]
+    ],
+    [
+      "back up a little and rest",
+      [
+        "kbkF",
+        "krest"
+      ]
+    ],
+    [
+      "face the other direction",
+      [
+        "kvtL"
+      ]
+    ],
+    [
+      "fly to the moon",
+      []
+    ]
+  ]
+}

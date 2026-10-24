@@ -8,7 +8,8 @@ import re
 from pathlib import Path
 
 CONTRACT_DIR = Path(__file__).resolve().parent.parent / "contract"
-ROBOTS = ("bittle", "nybble")
+# One contract/<robot>.json per robot (the .prompt/.schema files next to them are generated).
+ROBOTS = tuple(sorted(p.stem for p in CONTRACT_DIR.glob("*.json") if "." not in p.stem))
 KINDS = ("steps", "timed", "once")
 MAX_STEPS = 20
 STEPS_RE = "([1-9]|1[0-9]|20)"  # 1..MAX_STEPS, no leading zeros
@@ -43,6 +44,16 @@ class Contract:
     def validate(self, commands):
         """Return the commands that are NOT allowed; an empty list means all are allowed."""
         return [c for c in commands if not isinstance(c, str) or not re.fullmatch(self.pattern, c)]
+
+
+def registry():
+    """{robot: (model, ble_prefix)} from every contract file. model is the name the robot reports to '?';
+    ble_prefix is the start of its advertised Bluetooth name (lowercase)."""
+    out = {}
+    for robot in ROBOTS:
+        data = json.loads((CONTRACT_DIR / f"{robot}.json").read_text())
+        out[robot] = (data["model"], data["ble_prefix"])
+    return out
 
 
 def load(robot):

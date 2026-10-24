@@ -1,5 +1,7 @@
 {
   "robot": "Nybble Q robot cat",
+  "model": "Nybble",
+  "ble_prefix": "nybble",
   "codes": {
     "kwkF": {
       "meaning": "walk forward",
