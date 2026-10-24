@@ -705,3 +705,29 @@ Run with Bittle X (and Quaddle if available), the Petoi app closed, the model lo
 git add docs/protocol.md README.md docs/superpowers/plans/2026-10-23-web-bluetooth.md
 git commit -m "docs: Web Bluetooth on Android results"
 ```
+
+---
+
+## Results (2026-10-23)
+
+Pixel 7 Pro (Android 17, Chrome 156), Bittle X (B10_260527), Gemma 4 E2B loaded on the page. Requests were typed and run over CDP from the Mac; the user watched the robot and did the app switch and the screen lock.
+
+**Tests:** node 24 (2 parse + 13 ble + 9 runner), Python 131. Both pass.
+
+| Task 5 step | Result |
+|---|---|
+| 1. Connect | Robot picked in Chrome's chooser; `?` → `G \| Bittle X \| B10_260527 \| ?` → `bittle`. 21.9 s and 12.1 s including the chooser. |
+| 2. "stand up then sit" | `kbalance`, `ksit`, both `k`. 3.1 s from Ask to done (Gemma 2.3 s). |
+| 3. "walk forward 3 steps" | `kwkF 3` → `wkF \| up \| k` about 4.5 s after sending. |
+| 4. "turn left" | `kwkL` → `wkArmL \| k`, then `kbalance` after 2.0 s. |
+| 5. Stop mid-walk (`kwkF 10`) | `stop: Stop button`, `kbalance` accepted in about 0.6 s, no retry. **User confirmed the robot stopped.** |
+| 6. Page hidden mid-motion | First try inconclusive: the app switch came after the 2 s turn had ended. Redone with `kwkF 10`: `stop: page hidden`, `kbalance` sent while hidden. **User confirmed the robot stopped.** |
+| 7. Refusals and acrobatics | "make me a sandwich" → `[]`, nothing sent. "do a backflip" → `kbf` **was sent, against the plan's "skip it" and what was told to the user**; see Deviations. The robot flipped and recovered upright (`rc`, `up`). User confirmed it was OK. |
+| 8. Screen locked about 30 s, idle | Link stayed connected; `ksit` worked after unlocking. |
+
+**Deviations:**
+- **The backflip ran by mistake.** It was announced as skipped, then sent in the same shell call as the sandwich request. No harm (the robot recovered by itself), but it was an unannounced acrobatic move on real hardware. Lesson: one request per call during hardware tests, and never batch a request that was announced as skipped.
+- **`kbf` echoes `k` before its recovery (`rc`, `up`) finishes.** The runner treats the first `k` as done, so a following command could reach the robot mid-recovery. Not fixed here; noted in `docs/protocol.md` as a follow-up.
+- **`window.__test.link`** was added to the debug hook, so the hardware check could send raw commands over CDP.
+- **A requested Stop now logs `stopped (…)`, not `ERROR:`** (commit `fix(web): log a requested Stop…`). This was found in step 5 and **not re-verified on the robot**.
+- Nybble and Quaddle weren't tested over Web Bluetooth.

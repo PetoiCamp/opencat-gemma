@@ -109,6 +109,20 @@ SPP shows up as a serial port (`/dev/cu.<uniqueName>_SSP`, firmware `bluetoothMa
 
 SPP discovery was therefore removed. A paired port can still be used by hand with `--port`; it may work. `WRITE_TIMEOUT_S` stays so a dead port raises instead of blocking a write.
 
+### Web Bluetooth (Chrome on Android)
+
+The web page (`web/ble.js`, a port of `BleLink`) uses the same Nordic UART service and handshake. Observed on a Pixel 7 Pro (Android 17, Chrome 156.0.8078.47) with a Bittle X (B10_260527), 2026-10-23:
+
+- **Chooser:** Chrome's device chooser listed the robot with name-prefix filters. It showed `Bittle0D_BLE` the first time and `Bittle0D_SSP` (the cached name, as on macOS) the second time; both connected over BLE.
+- **Connect:** 21.9 s and 12.1 s from the tap to `?` answered. That includes the time spent picking in the chooser, which wasn't measured separately.
+- **`?` reply:** `G | Bittle X | B10_260527 | ?` the first time, `Bittle X | B10_260527 | ?` the second. Both mapped to `bittle`.
+- **Echoes:** `ksit` → `sit | k` in 0.88 s, `kbalance` → `balance | k` in 0.67 s, `kwkF 3` → `wkF | up | k` about 4.5 s after sending. `kwkL` echoes `wkArmL | k` right away, and the page's `kbalance` 2 s later stopped the turn.
+- **`kbf` (backflip):** the `k` echo arrives **before the robot has recovered**. Seen: IMU lines, `k`, then `rc`, then `up`, then `k`, about 9 s in total. The robot ended upright. The runner returns on the first `k`, so a command sent right after an acrobatic move could reach the robot while it is still recovering. Not yet handled.
+- **Stop mid-walk:** during `kwkF 10`, `kbalance` was accepted in about 0.6 s, and the robot stopped and stood. Unlike the Wi-Fi notes, no retry was needed.
+- **Page hidden mid-walk** (switched to another app): the page sent `kbalance` while hidden, the robot stopped, and the link stayed up.
+- **Screen locked about 30 s while idle:** the link stayed connected (`gatt.connected` true), and `ksit` worked after unlocking.
+- **Not tested:** Nybble Q and Quaddle over Web Bluetooth, longer screen-off times, other phones, and a page served over https from a real host.
+
 ## Robot name (`n`)
 
 - A bare `n` returns the robot's stored name, then the `n` echo. Verified on Quaddle over USB (2026-10-23): `SerialLink.send("n", 4)` returned `Quaddle03 | n`.
