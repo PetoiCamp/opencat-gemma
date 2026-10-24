@@ -87,6 +87,7 @@ The starter kit currently works around this by never sending turn angles: it tim
 1. **A serial command to erase stored Wi-Fi credentials.** Today the only way is holding the BOOT button for about 2 s, which calls `resetWifiManager()` (`reaction.h:198-224`, `webServer.h:674`). A token, e.g. `w!` or a sub-command of `w`, would let a program or a classroom reset robots without touching the board.
 **Answer:**
 "w!" should be good to reset.
+**Follow-up (2026-10-23):** `w!` is not implemented yet in either firmware (BiBoard `84dd6ef`, Quaddle `14cc217`). It falls through to the usage or "already connected" message and erases nothing. Please add it. The kit will add a `--wifi-reset` flag once it ships. Note that a bare `!` is the full board reset, so the kit never sends it.
 
 2. **An echo after a successful `w%SSID%password`.** On success the firmware prints the IP and then calls `ESP.restart()`, so the usual `w` echo never arrives. Our host code now stops at the IP line, but an explicit "joined, rebooting" line would make this unambiguous.
 **Answer:**

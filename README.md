@@ -93,6 +93,7 @@ Both were checked on Bittle X with macOS (2026-10-23). Windows and Linux are not
 - Run `.venv/bin/python -m opencat_gemma --bluetooth`. With several robots nearby, use `--bluetooth --name <name>` instead (see "Several robots in one room" below). The robot is found by scanning for a `Bittle...`, `Nybble...`, `Quaddle...` or `Petoi...` name (about 8 s), strongest signal first, and identified with `?`.
 - **Bittle X and Nybble Q lie down (rest) when Bluetooth connects.** This is firmware behaviour. The first command makes them stand. Quaddle does not.
 - **Quaddle may stop advertising Bluetooth while plugged in and charging.** It was not found with the USB cable connected, and was found right after unplugging it (2026-10-23). If `--bluetooth` can't find a Quaddle, unplug the cable, or power-cycle it.
+- **Quaddle freezes its motion while charging.** When the USB cable is plugged in, it may show its charging status and ignore movement. Flip it over to wake it up.
 - Close the Petoi phone app first. Only one BLE client can be connected at a time.
 - Verified on macOS (Bittle X, 2026-10-23):
   - the robot is found automatically (about 15-20 s, mostly scanning);
