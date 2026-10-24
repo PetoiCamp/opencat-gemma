@@ -727,7 +727,7 @@ Pixel 7 Pro (Android 17, Chrome 156), Bittle X (B10_260527), Gemma 4 E2B loaded 
 
 **Deviations:**
 - **The backflip ran by mistake.** It was announced as skipped, then sent in the same shell call as the sandwich request. No harm (the robot recovered by itself), but it was an unannounced acrobatic move on real hardware. Lesson: one request per call during hardware tests, and never batch a request that was announced as skipped.
-- **`kbf` echoes `k` before its recovery (`rc`, `up`) finishes.** The runner treats the first `k` as done, so a following command could reach the robot mid-recovery. Not fixed here; noted in `docs/protocol.md` as a follow-up.
+- **Corrected after the fact:** this section first said "`kbf` echoes `k` before its recovery finishes, so a following command could arrive mid-recovery". That was a misreading. The first `k` ends an IMU line, so the link ignored it and returned on the final standalone `k` after `rc` and `up`. Regression tests with the recorded trace now pin this (see `docs/protocol.md`, `kbf` bullet, for the residual risk).
 - **`window.__test.link`** was added to the debug hook, so the hardware check could send raw commands over CDP.
 - **A requested Stop now logs `stopped (…)`, not `ERROR:`** (commit `fix(web): log a requested Stop…`). This was found in step 5 and **not re-verified on the robot**.
 - Nybble and Quaddle weren't tested over Web Bluetooth.

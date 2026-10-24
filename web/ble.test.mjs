@@ -5,14 +5,17 @@ import { readFileSync } from "node:fs";
 import { NusLink, robotFromReply } from "./ble.js";
 
 // A link with a fake clock. `replies` maps a written line to text the robot notifies back (string or chunks).
+// The first chunk arrives with the write, each later chunk one clock tick later, so a reply arrives in stages.
 function fake(replies = {}) {
   let t = 0;
-  const writes = [];
+  const writes = [], queued = [];
   const link = new NusLink(async (bytes) => {
     const line = new TextDecoder().decode(bytes);
     writes.push(line);
-    for (const chunk of [replies[line] ?? []].flat()) link.feed(chunk);
-  }, { now: () => t, tick: async (ms) => { t += ms; } });
+    const [first, ...rest] = [replies[line] ?? []].flat();
+    if (first !== undefined) link.feed(first);
+    queued.push(...rest);
+  }, { now: () => t, tick: async (ms) => { t += ms; if (queued.length) link.feed(queued.shift()); } });
   return { link, writes, now: () => t };
 }
 
@@ -87,6 +90,18 @@ test("send stops waiting when aborted", async () => {
   const ctl = new AbortController();
   ctl.abort(new Error("stopped"));
   await assert.rejects(link.send("kwkF 3", 11, { signal: ctl.signal }), /stopped/);
+});
+
+// Recorded over Web Bluetooth (Bittle X, 2026-10-23, docs/protocol.md): after the flip the firmware prints IMU
+// readings without a newline, so the skill's first "k" ends an IMU line; the IMU then sees the robot upside down and
+// the firmware itself runs "rc" (recover) and "up". Only the last, standalone "k" means the robot is done.
+const KBF = ["bf\r\nICM: -3.63  2.26 -9.17-1460.7 -159.1  166.1\tk\r\n", "ICM: -4.38 -0.05 -9.07-1459.1 -154.3 -179.7\trc\r\n",
+  "ICM:  0.31  0.02  9.99-1422.6    1.6    0.1\tup\r\n", "k\r\n"];
+
+test("a backflip returns only after the firmware's own recovery (the last standalone k)", async () => {
+  const { link } = fake({ "kbf\n": KBF });
+  const reply = await link.send("kbf", 10);
+  assert.match(reply, /\trc \| .*\tup \| k$/);
 });
 
 test("robotFromReply maps ? replies with the real contracts; first model name wins", () => {

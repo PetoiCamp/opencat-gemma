@@ -112,6 +112,15 @@ class BleLinkTest(unittest.TestCase):
         link.connect()
         self.assertEqual(link.send("kbalance", timeout=1), "balance | k")
 
+    def test_backflip_returns_only_after_the_firmwares_own_recovery(self):
+        """Recorded over Web Bluetooth (Bittle X, 2026-10-23): the skill's first 'k' ends an IMU line (IMU readings have
+        no newline), then the firmware itself recovers ('rc', 'up'). Only the last, standalone 'k' means done."""
+        kbf = [b"bf\r\nICM: -3.63  2.26 -9.17-1460.7 -159.1  166.1\tk\r\n", b"ICM: -4.38 -0.05 -9.07-1459.1 -154.3 -179.7\trc\r\n",
+               b"ICM:  0.31  0.02  9.99-1422.6    1.6    0.1\tup\r\n", b"k\r\n"]
+        _, link = self.link(replies={"kbf": kbf})
+        link.connect()
+        self.assertRegex(link.send("kbf", timeout=2), r"\trc \| .*\tup \| k$")
+
     def test_send_without_echo_times_out(self):
         _, link = self.link(replies={"kbalance": b"balance\r\n"})
         link.connect()
