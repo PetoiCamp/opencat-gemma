@@ -209,13 +209,59 @@ Gemma accuracy and latency can be checked without a robot (see below).
 - **Check Gemma on your machine:** `.venv/bin/python eval/run_eval.py --robot bittle` runs the requests in `eval/cases.<robot>.json` (or `eval/cases.json` if there is none) against Ollama and prints pass/fail and latency. Use `--robot nybble` or `--robot quaddle` for the other contracts.
 - **Tests:** `.venv/bin/python -m unittest discover tests` (no Ollama or robot needed).
 - **Protocol notes:** [docs/protocol.md](docs/protocol.md).
-- **Android (web, experimental):** `web/index.html` runs Gemma 4 E2B in Chrome on the phone (LiteRT-LM web 0.18.0, WebGPU) and runs the eval; `web/demo.html` is a cleaner demo (the model is kept on the phone after the first pick, chat history, a big STOP). Serve the repo with `python3 -m http.server 8000`, run `adb reverse tcp:8000 tcp:8000`, open `http://localhost:8000/web/` on the phone, and pick `gemma-4-E2B-it-web.litertlm` (from `litert-community/gemma-4-E2B-it-litert-lm` on Hugging Face). Pixel 7 Pro: 15/16, about 2 s per request after a one-time ~7 s prompt prefill. Tap **Connect robot** to drive the robot over Bluetooth LE (Web Bluetooth; Bittle X verified 2026-10-23: walks, timed turns, Stop, and a stop when the page is hidden; see `docs/protocol.md`). Not on iPhone: no iOS browser supports Web Bluetooth. No Wi-Fi mode on phones yet: on Android 17, Chrome is blocked from the local network (`ERR_LOCAL_NETWORK_PERMISSION_MISSING`, see `docs/protocol.md`). Results: `docs/superpowers/plans/2026-10-23-web-gemma-connection.md` and `docs/superpowers/plans/2026-10-23-web-prefill-reuse.md`.
-  - **Where things run** (Gemma runs on the phone, even when the page is hosted on `https`) and how the model copy on the phone (OPFS) works: [docs/web.md](docs/web.md).
-  - **Browser: use Chrome.** Everything above was tested in Chrome 156 on a Pixel 7 Pro. Other Chromium-based browsers may work but are not tested.
-  - **Brave needs setup:**
-    - Brave turns Web Bluetooth off by default, so **Connect robot** fails with "Web Bluetooth API globally disabled".
-    - To turn it on: open `brave://flags`, search for **Web Bluetooth**, set it to **Enabled**, then tap **Relaunch**. The demo was not tested in Brave after enabling it.
-    - Brave also keeps its own copy of the model, because storage is per browser. The first visit in Brave asks for the model file again.
+- **Android phone (web, experimental):** Gemma on the phone and the robot over Bluetooth, from Chrome. See [Android phone](#android-phone-web-experimental) below.
+
+## Android phone (web, experimental)
+
+Gemma 4 E2B runs **on the phone**, in Chrome (LiteRT-LM web 0.18.0, WebGPU), and the robot is driven over Bluetooth LE (Web Bluetooth). Verified on a Pixel 7 Pro (Android 17, Chrome 156) with a Bittle X, 2026-10-23. For now the laptop only serves the page to the phone over the USB cable; hosting it on `https` would remove the laptop (see [docs/web.md](docs/web.md)).
+
+### What you need
+
+- An Android phone with **Chrome**. In Brave, Web Bluetooth is off by default (see "Browsers" below).
+- A USB cable, with **USB debugging** turned on on the phone. On the laptop: `adb` (Android platform-tools) and Python 3.
+- The model file on the phone: `gemma-4-E2B-it-web.litertlm` (2.0 GB), from `litert-community/gemma-4-E2B-it-litert-lm` on Hugging Face. Download it on the phone, or from the laptop: `adb push gemma-4-E2B-it-web.litertlm /sdcard/Download/`.
+- The robot switched on, with the **Petoi phone app closed** (only one Bluetooth client can connect).
+
+### Start (every session)
+
+1. On the laptop, from the repo root: `python3 -m http.server 8000`.
+2. `adb reverse tcp:8000 tcp:8000`. Run it again after re-plugging the phone.
+3. On the phone, open one of the pages below in Chrome. Keep the cable plugged in: the page is served over it.
+
+### Which page?
+
+| Page | Use it to | Address on the phone |
+|---|---|---|
+| **Demo** (`web/demo.html`) | Show it off: type a request, and the robot does it | `http://localhost:8000/web/demo.html` |
+| **Test** (`web/index.html`) | Check Gemma (eval: accuracy and speed, no robot needed), try requests, read the raw log | `http://localhost:8000/web/` |
+
+Use one page at a time with the robot: only one page can hold the Bluetooth connection. Leaving a page drops its connection.
+
+### Demo page
+
+1. Open `http://localhost:8000/web/demo.html`.
+   - **First visit:** the page asks for the model file. Pick `gemma-4-E2B-it-web.litertlm`. It loads (about 17 s), then says "keeping a copy on this phone…" (about 30 s). **Don't reload until it says `ready`,** or the copy is lost.
+   - **Later visits:** the model loads from that copy by itself (about 17 s). Use "Change model" to pick a different file.
+2. Tap **Connect robot**, pick the robot (`Bittle…_BLE`), and wait about 10 s ("connecting…"). A Bittle X lies down when Bluetooth connects; the first command makes it stand.
+3. Type a request (for example "walk forward then sit") and tap **Go**. The chat shows Gemma's commands, then a ✓ and the robot's reply for each command. Requests that aren't allowed show "not allowed, robot untouched".
+4. **STOP** (red, full width) stops the robot at any time, even while Gemma is still thinking. Leaving the page (switching apps) also stops a moving robot.
+
+### Test page
+
+1. Open `http://localhost:8000/web/`, pick the model file (on **every** visit; this page keeps no copy), and tap **Load model** (about 7 s, plus about 7 s to read the robot's prompt).
+2. **Run eval** runs the 16 requests in `eval/cases.json` and prints pass/fail and timing per request (Pixel 7 Pro: 15/16, about 2 s per request). No robot needed.
+3. Optional: tap **Connect robot (Bluetooth)**, type in the box, and tap **Ask**; the robot runs the result. **Stop** stops it. **Copy log** copies the log.
+
+### Browsers, iPhone and Wi-Fi
+
+- **Use Chrome.** Everything here was tested in Chrome 156. Other Chromium-based browsers may work but are not tested.
+- **Brave needs setup:**
+  - Brave turns Web Bluetooth off by default, so **Connect robot** fails with "Web Bluetooth API globally disabled".
+  - To turn it on: open `brave://flags`, search for **Web Bluetooth**, set it to **Enabled**, then tap **Relaunch**. The demo was not tested in Brave after enabling it.
+  - Brave also keeps its own copy of the model, because storage is per browser, so the first visit in Brave asks for the model file again.
+- **Not on iPhone:** no iOS browser supports Web Bluetooth.
+- **No Wi-Fi mode on phones yet:** on Android 17, Chrome is blocked from the local network (`ERR_LOCAL_NETWORK_PERMISSION_MISSING`, see `docs/protocol.md`).
+- How it works and where each part runs: [docs/web.md](docs/web.md). Protocol details: `docs/protocol.md`. Results: `docs/superpowers/plans/2026-10-23-web-gemma-connection.md`, `…-web-prefill-reuse.md`, `…-web-bluetooth.md` and `…-bluetooth-demo.md`.
 
 ## Adding a robot
 
