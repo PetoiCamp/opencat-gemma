@@ -1,0 +1,17 @@
+[
+  {"raw": "[\"kwkF\",\"ksit\"]", "commands": ["kwkF", "ksit"], "error": null},
+  {"raw": "[\"kwkF 5\", \"krest\"]", "commands": ["kwkF 5", "krest"], "error": null},
+  {"raw": "{\"commands\": [\"khi\"]}", "commands": ["khi"], "error": null},
+  {"raw": "  []  ", "commands": [], "error": null},
+  {"raw": "[\"kwkF 21\"]", "commands": null, "error": "not allowed"},
+  {"raw": "[\"kwkF 05\"]", "commands": null, "error": "not allowed"},
+  {"raw": "[\"kwkL 90\"]", "commands": null, "error": "not allowed"},
+  {"raw": "[\"ksit\\n\"]", "commands": null, "error": "not allowed"},
+  {"raw": "[\"KSIT\"]", "commands": null, "error": "not allowed"},
+  {"raw": "[\"ksit\", \"rm -rf\"]", "commands": null, "error": "not allowed"},
+  {"raw": "[1]", "commands": null, "error": "not allowed"},
+  {"raw": "```json\n[\"ksit\"]\n```", "commands": null, "error": "invalid JSON"},
+  {"raw": "\"ksit\"", "commands": null, "error": "not a list"},
+  {"raw": "null", "commands": null, "error": "not a list"},
+  {"raw": "{\"a\": 1}", "commands": null, "error": "not a list"}
+]
