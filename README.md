@@ -147,6 +147,12 @@ Bittle X has 69 commands, Nybble Q 52 and Quaddle 100. Most are shared; Bittle X
 Use the serial command 'X' to activate a single sensor's demo. For example, "XD" turns on DoubleDistanceSensor, and "Xd" turns it off. "XT" turns on the DoubleTouchSensor. The supported sensor list is in OpenCat.h. 
 You can use the serial command "Ra", "Rd", "Wa", "Wd" to AnalogRead, DigitalRead, AnalogWrite, DigitalWrite certain pins. Read the demo code and comments to understand the signal's properties before writing control logic. 
 
+**Nybble Eye Color**
+The Nybble RGB ultrasonic eye color is set with the uppercase token C, followed by five raw bytes and a ~ terminator (byte value 126). The on-wire format is C, red, green, blue, eye index, effect, ~. Red, green, and blue are each 0–125; 126 cannot be used as a color because it is the binary-command terminator. The eye index is 0 for changing both eyes, 1 for the right eye, and 2 for the left eye. The effect is 0 for breathing, 1 for rotate, 2 for flash, and 3 for steady. Rotate and flash apply to all LEDs regardless of the eye index. A single C with no payload cancels manual color and returns the eyes to automatic distance-based colors. An in-firmware example of both eyes breathing red is the byte array {125, 0, 0, 0, 0, 126}.
+
+**Backtouch sensor**
+The back-touch sensor is read with analogRead(BACKTOUCH_PIN) on GPIO 38. The ADC is 12-bit, so the raw value is 0–4095. A connected sensor with no touch reads 4095. A reading below 2400 is a touch: integer-divide it by 600 to get a bin from 0 to 3, then map that bin through touchPadMap[] = {1, 3, 4, 2} to a pad index. A reading of 2400 or higher is index 0, meaning no touch. The bins are 0–599 → index 1 (Front Left), 600–1199 → index 3 (Center), 1200–1799 → index 4 (Back), and 1800–2399 → index 2 (Front Right). The location name is touchLocation[index - 1], whose entries in order are "Front Left", "Front Right", "Center", and "Back".
+
 | Group | Examples | Notes |
 |---|---|---|
 | Walking, steps | `kwkF`, `kbk` (Quaddle: `kbkF`), `ktrF`, `kcrF`, `kvtF` | Optional count 1-20 (default 3). Codes ending in `F` are steps. |
