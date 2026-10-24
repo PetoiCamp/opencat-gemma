@@ -148,6 +148,8 @@ $("file").onchange = () => { if ($("file").files[0]) startModel($("file").files[
 $("change").onclick = () => { $("pick").hidden = false; };
 
 $("connect").onclick = async () => {
+  const before = status.robot;
+  setStatus("robot", "connecting… (pick the robot, then about 10 s)");  // the handshake is slow; don't look stuck
   try {
     const c = await connectRobot(await registryReady, () => {});
     driver.link?.close?.();  // a reconnect replaces the old link
@@ -173,6 +175,7 @@ $("connect").onclick = async () => {
       }
     }
   } catch (e) {
+    setStatus("robot", driver.link ? before : "not connected");
     note(`Connect failed: ${e.message}`);
   }
 };
