@@ -97,3 +97,8 @@ The starter kit currently works around this by never sending turn angles: it tim
    - BiBoard pushes `Petoi <MODEL>` on connect and forces rest (`d`).
    - Quaddle stays silent until asked `?`, and does not force rest.
    - Is the Quaddle behaviour the intended direction for all robots? Hosts currently have to support both.
+7. **Seven commands in the Quaddle Gemma prompt don't exist on the robot** (checked 2026-10-23 on firmware `Q_261022`). The Quaddle serial prompt for Gemma lists `kgdb` (good boy), `khg` (hug), `kchr` (cheer), `kmw` (moonwalk), `kcmh` (come here), `khu` (raise hand) and `kdg` (dig).
+   - The robot answers each with `?<name>?` (e.g. `?gdb?`) and doesn't move.
+   - They're also absent from the latest S3 source.
+   - Should they be removed from the prompt, or are these skills planned for Quaddle?
+8. **An unknown skill still gets the `k` "done" echo.** After `?gdb?` the firmware prints `k`, so a host that waits for the echo reports success for a command that did nothing. Could an unknown skill skip the echo, or print a distinct error token?
