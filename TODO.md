@@ -74,7 +74,7 @@ The yaw will drift over time and is unwrapped. You can zero the current yaw when
 
 2. Why did it load `wkArmL` (the arm variant) rather than `wkL`, on a Bittle X without an arm?
 **Annswer:**
-It won't load "wkArmL" if you call "wkL".
+It won't load "wkArmL" if you call "wkL". Make sure the firmware has the macro "ROBOT_ARM" disabled. 
    
 3. Could a turn have a **time limit** even when the gyro is present? Right now a number after `kwkL` is always read as degrees.
 **Answer:**
