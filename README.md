@@ -2,6 +2,78 @@
 
 Talk to a Petoi robot (Bittle X, Nybble Q or Quaddle) with Gemma running 100% on-device.
 
+## Hackathon quick start
+
+This repo gives your team **two working demos**, so you can skip the setup trouble and start on your own idea within the first hour. Each demo already does the hard parts: Gemma turns a typed request into robot commands, a safety check rejects anything not allowed, and the robot moves.
+
+**The rule:** every project must use a Gemma-based model running 100% on-device, with inference on the phone, board or robot you demo. These demos make no cloud calls; the network is only used to download the code and the model.
+
+### 1. Pick a starting demo
+
+| | Phone demo (Android) | Laptop demo |
+|---|---|---|
+| Gemma runs on | **The phone** (Chrome, LiteRT-LM, WebGPU) | The laptop (Ollama) |
+| Robot link | Bluetooth | USB cable, Bluetooth or Wi-Fi |
+| Code | JavaScript, `web/` | Python, `opencat_gemma/` |
+| Fits well with | Mobile AI track; Google partner tech (Android, Pixel, LiteRT) | Fast prototyping in Python; Physical AI / IoT & Robotics |
+| You need | An Android phone with Chrome, a USB cable, a laptop with `adb` and Python | A laptop with Python 3 and Ollama |
+| Start here | [Android phone](#android-phone-web-experimental) | [Quickstart (laptop)](#quickstart-laptop) |
+
+- **About the rule and laptops.** In the laptop demo, Gemma runs on the laptop, and a laptop isn't on the rule's list (phone, board, robot). If you build on it, check with the organizers, or plan to move Gemma to a phone or a board for your final demo. The phone demo meets the rule as is: the laptop only serves the page's files to the phone over the cable.
+- **Tested so far:**
+  - Phone: Pixel 7 Pro with Chrome. Other Android phones need a recent Chrome with WebGPU.
+  - Laptop: macOS. Windows and Linux are not yet verified.
+  - A Raspberry Pi (a "board") was not tested.
+
+### 2. Before you touch the robot (2 minutes)
+
+- **Find your robot's name.** Each robot advertises over Bluetooth as `<name>_BLE`, for example `Bittle0D_BLE`. Several robots will be nearby, so pick yours by name. Ask the Petoi team which name is yours.
+- **Only one connection at a time.** Close the Petoi phone app and the Petoi Desktop App. Only one phone, page or laptop can be connected to a robot at once, so agree on who drives.
+- **Charged battery, flat floor, about 1 m of clear space.** Keep a hand near the power switch.
+- **How to stop:**
+  - Phone demo: the big red **STOP** button. Leaving the page also stops a moving robot.
+  - Laptop demo: **Ctrl+C**.
+  - Either way, the robot stands still (`kbalance`).
+- **Acrobatics are allowed with no confirmation step** (flips, roll, jump). Only ask for them with space around the robot.
+- **Normal behaviour:** a Bittle X lies down when Bluetooth connects; the first command makes it stand. Walks always stop by themselves after a step count. Turns are stopped by the demo after 2 s.
+
+### 3. Ideas to build on
+
+- **Mobile AI:**
+  - Give the robot a personality: change the command meanings and examples in `contract/<robot>.json`, then regenerate the prompt.
+  - Games like "Simon says".
+  - Routines from one sentence ("do a morning exercise").
+  - A better phone UI.
+  - The phone page is text-only today: the LiteRT-LM web library is text-in, text-out.
+- **Physical AI / IoT & Robotics:**
+  - Feed sensor readings into the prompt (see [Understanding the sensors' input](#understanding-the-sensors-input) and [Extension modules](#extension-modules-ideas-for-gemma-projects)).
+  - Several robots dancing together, one phone or laptop each.
+  - Let Gemma plan longer sequences.
+- **Partner tech:**
+  - The phone demo already uses Google's Android, Pixel and LiteRT.
+  - Moving the Python demo to a Raspberry Pi is a natural "board" project; it's untested here.
+  - The other partners' hardware (NVIDIA, Qualcomm, Arduino, Synaptics, Coral) is not integrated.
+- **Where to change things:**
+  - Allowed commands, the prompt, and examples: `contract/<robot>.json`, then regenerate (see [Adding a robot](#adding-a-robot)).
+  - Safety rules: `opencat_gemma/runner.py` and `web/runner.js`.
+  - Robot links: `opencat_gemma/links.py`, `opencat_gemma/ble.py` and `web/ble.js`.
+
+### 4. When something goes wrong
+
+| Symptom | Fix |
+|---|---|
+| Phone: "Web Bluetooth API globally disabled" | You're in Brave. Use Chrome, or enable Web Bluetooth in `brave://flags`. |
+| Phone: the page asks for the model file again | The copy was cut short by a reload. Pick the file again and wait for `ready` before reloading. |
+| Phone: the page doesn't load | Is the cable plugged in, is `python3 -m http.server 8000` running, and did you run `adb reverse tcp:8000 tcp:8000` (again after re-plugging)? |
+| Phone: "WebGPU: NO", or the model won't load | Update Chrome. Only a Pixel 7 Pro was tested; older phones may not support WebGPU or have enough memory. |
+| Phone: Connect finds no robot, or fails | The robot is off, or someone else is connected (the Petoi app, another tab, a teammate's laptop). |
+| Phone: robot over Wi-Fi | Not possible from a phone page yet: Android 17 blocks Chrome from the local network. Use Bluetooth. |
+| Laptop: "Can't reach Ollama" or model missing | `ollama serve`, then `ollama pull gemma4:e2b-it-qat`. |
+| Laptop: the USB port is busy | Close the Petoi Desktop App and any serial monitor. |
+| Laptop (macOS): `[Errno 65] No route to host` over Wi-Fi | Allow Local Network for your terminal app (see [Connect without a cable](#connect-without-a-cable)), or use Terminal.app. |
+| Robot won't join Wi-Fi | The robot needs a 2.4 GHz network. |
+| "turn 90 degrees" only turns for 2 s | By design: angle turns never stopped on this firmware, so turns are timed. |
+
 ## Supported robots
 
 | Robot | Firmware family | Verified on hardware |
@@ -12,7 +84,7 @@ Talk to a Petoi robot (Bittle X, Nybble Q or Quaddle) with Gemma running 100% on
 
 Each robot is one `contract/<robot>.json` (see "Adding a robot").
 
-A starter kit for hackathon teams. Everything here runs on your laptop: Gemma through [Ollama](https://ollama.com), then USB serial or Wi-Fi to the robot. No cloud calls.
+A starter kit for hackathon teams. Gemma runs on-device, either on an Android phone (Chrome, LiteRT) or on a laptop ([Ollama](https://ollama.com)), and the robot connects over Bluetooth, USB or Wi-Fi. No cloud calls.
 
 ## How it works
 
