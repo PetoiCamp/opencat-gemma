@@ -19,12 +19,6 @@ This repo gives your team **two working demos**, so you can skip the setup troub
 | You need | An Android phone with Chrome, a USB cable, a laptop with `adb` and Python | A laptop with Python 3 and Ollama |
 | Start here | [Android phone](#android-phone-web-experimental) | [Quickstart (laptop)](#quickstart-laptop) |
 
-- **About the rule and laptops.** In the laptop demo, Gemma runs on the laptop, and a laptop isn't on the rule's list (phone, board, robot). If you build on it, check with the organizers, or plan to move Gemma to a phone or a board for your final demo. The phone demo meets the rule as is: the laptop only serves the page's files to the phone over the cable.
-- **Tested so far:**
-  - Phone: Pixel 7 Pro with Chrome. Other Android phones need a recent Chrome with WebGPU.
-  - Laptop: macOS. Windows and Linux are not yet verified.
-  - A Raspberry Pi (a "board") was not tested.
-
 ### 2. Before you touch the robot (2 minutes)
 
 - **Find your robot's name.** Each robot advertises over Bluetooth as `<name>_BLE`, for example `Bittle0D_BLE`. Several robots will be nearby, so pick yours by name. Ask the Petoi team which name is yours.
@@ -37,28 +31,7 @@ This repo gives your team **two working demos**, so you can skip the setup troub
 - **Acrobatics are allowed with no confirmation step** (flips, roll, jump). Only ask for them with space around the robot.
 - **Normal behaviour:** a Bittle X lies down when Bluetooth connects; the first command makes it stand. Walks always stop by themselves after a step count. Turns are stopped by the demo after 2 s.
 
-### 3. Ideas to build on
-
-- **Mobile AI:**
-  - Give the robot a personality: change the command meanings and examples in `contract/<robot>.json`, then regenerate the prompt.
-  - Games like "Simon says".
-  - Routines from one sentence ("do a morning exercise").
-  - A better phone UI.
-  - The phone page is text-only today: the LiteRT-LM web library is text-in, text-out.
-- **Physical AI / IoT & Robotics:**
-  - Feed sensor readings into the prompt (see [Understanding the sensors' input](#understanding-the-sensors-input) and [Extension modules](#extension-modules-ideas-for-gemma-projects)).
-  - Several robots dancing together, one phone or laptop each.
-  - Let Gemma plan longer sequences.
-- **Partner tech:**
-  - The phone demo already uses Google's Android, Pixel and LiteRT.
-  - Moving the Python demo to a Raspberry Pi is a natural "board" project; it's untested here.
-  - The other partners' hardware (NVIDIA, Qualcomm, Arduino, Synaptics, Coral) is not integrated.
-- **Where to change things:**
-  - Allowed commands, the prompt, and examples: `contract/<robot>.json`, then regenerate (see [Adding a robot](#adding-a-robot)).
-  - Safety rules: `opencat_gemma/runner.py` and `web/runner.js`.
-  - Robot links: `opencat_gemma/links.py`, `opencat_gemma/ble.py` and `web/ble.js`.
-
-### 4. When something goes wrong
+### 3. When something goes wrong
 
 | Symptom | Fix |
 |---|---|
