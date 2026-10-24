@@ -31,13 +31,14 @@
 import { Engine, SamplerType } from "https://cdn.jsdelivr.net/npm/@litert-lm/core@0.18.0/+esm";
 import { parse } from "./parse.js";
 import { connectWebBluetooth, robotFromReply } from "./ble.js";
+import { run, STOP, CMD_TIMEOUT_S } from "./runner.js";
 
 const $ = (id) => document.getElementById(id);
 const log = (s) => { $("log").textContent += s + "\n"; console.log(s); };
 const fetchText = async (p) => { const r = await fetch(p); if (!r.ok) throw new Error(`${p}: ${r.status}`); return r.text(); };
 $("env").textContent = `WebGPU: ${"gpu" in navigator ? "yes" : "NO"} | ${navigator.userAgent}`;
 
-let engine, prompt, pattern, base, prev = null;
+let engine, prompt, pattern, codes, base, prev = null, running = null;
 
 const ROBOTS = ["bittle", "nybble", "quaddle"];  // contract/<robot>.json
 let link = null;
@@ -59,25 +60,36 @@ async function connect() {
   }
   link = c.link;
   link.device.addEventListener("gattserverdisconnected", () => { log("robot disconnected"); link = null; });
+  if (robot !== $("robot").value) {
+    $("robot").value = robot;
+    await loadRobot(robot);
+  }
 }
 
-async function load() {
-  const robot = $("robot").value;
+// Contract for `robot`; with a loaded model, also a new prefilled conversation (the old base and its last clone
+// are left alone: deleting clones out of order broke base.clone() in 0.18.0, and robot switches are rare).
+async function loadRobot(robot) {
   prompt = await fetchText(`../contract/${robot}.prompt.txt`);
   pattern = JSON.parse(await fetchText(`../contract/${robot}.schema.json`)).items.pattern;
-  const model = $("file").files[0] ?? $("url").value;
-  log(`loading ${model.name ?? model} ...`);
-  let t = performance.now();
-  engine =await Engine.create({ model, mainExecutorSettings: { maxNumTokens: 2048 } });
-  log(`model loaded in ${((performance.now() - t) / 1000).toFixed(1)}s (${robot})`);
-  t = performance.now();
+  codes = JSON.parse(await fetchText(`../contract/${robot}.json`)).codes;
+  if (!engine) return;
+  const t = performance.now();
   base = await engine.createConversation({
     preface: { messages: [{ role: "system", content: prompt }], extra_context: { enable_thinking: false } },
     sessionConfig: { samplerParams: { type: SamplerType.GREEDY }, maxOutputTokens: 128 },
     prefillPrefaceOnInit: true,
   });
   prev = null;
-  log(`system prompt prefilled in ${((performance.now() - t) / 1000).toFixed(1)}s`);
+  log(`system prompt prefilled in ${((performance.now() - t) / 1000).toFixed(1)}s (${robot})`);
+}
+
+async function load() {
+  const model = $("file").files[0] ?? $("url").value;
+  log(`loading ${model.name ?? model} ...`);
+  const t = performance.now();
+  engine = await Engine.create({ model, mainExecutorSettings: { maxNumTokens: 2048 } });
+  log(`model loaded in ${((performance.now() - t) / 1000).toFixed(1)}s`);
+  await loadRobot($("robot").value);
   $("eval").disabled = $("ask").disabled = false;
 }
 
@@ -126,7 +138,28 @@ $("eval").onclick = guard(async () => {  // a second run in parallel doubles eve
 $("ask").onclick = guard(async () => {
   const r = await ask($("req").value);
   log(`${r.secs.toFixed(1)}s | ${r.out} -> ${r.error ?? JSON.stringify(r.commands)}`);
+  if (!link || r.error || !r.commands.length) return;  // refused or empty: the robot is untouched
+  running = new AbortController();
+  try {
+    await run({ codes, pattern }, r.commands, link, { log, signal: running.signal });
+  } finally {
+    running = null;
+  }
 });
+
+// Stop: abort a running plan (run() sends STOP on the way out), else send STOP directly.
+function stop(why) {
+  if (running) {
+    log(`stop: ${why}`);
+    running.abort(new Error(why));
+  } else if (link) {
+    link.send(STOP, CMD_TIMEOUT_S).then((r) => log(`  sent ${STOP} robot: ${r}`), (e) => log(`  STOP FAILED: ${e} - switch the robot off`));
+  }
+}
+$("stop").onclick = () => stop("Stop button");
+// A hidden tab may lose the Bluetooth link; a timed turn would then never get its kbalance.
+document.addEventListener("visibilitychange", () => { if (document.hidden && running) stop("page hidden"); });
+$("robot").onchange = guard(() => loadRobot($("robot").value));
 $("copy").onclick = () => navigator.clipboard.writeText($("log").textContent);
 </script>
 </body>
