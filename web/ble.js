@@ -108,3 +108,15 @@ export async function connectWebBluetooth(prefixes, log = console.log) {
   link.close = () => device.gatt.disconnect();
   return { link, name: device.name, reply: await link.connect() };
 }
+
+// Connect over Web Bluetooth and identify the robot from its '?' reply. Must be called from a user tap.
+// registry: {robot: [model, blePrefix]} (contracts.js loadRegistry). Returns { link, name, reply, robot }.
+export async function connectRobot(registry, log = console.log) {
+  const c = await connectWebBluetooth([...Object.values(registry).map(([, prefix]) => prefix), "petoi"], log);
+  const robot = robotFromReply(c.reply, registry);
+  if (!robot) {
+    c.link.close();
+    throw new Error(`not a robot this page knows: '?' replied ${JSON.stringify(c.reply)}`);
+  }
+  return { ...c, robot };
+}

@@ -83,3 +83,9 @@ test("empty and disallowed send nothing", async () => {
   await assert.rejects(run(B, ["kwkL 90"], link, quiet), /not allowed/);
   assert.deepEqual(link.sent, []);
 });
+
+test("onSent sees each command and the page's STOP after a turn, with the robot's reply", async () => {
+  const seen = [];
+  await run(B, ["kwkL"], fakeLink(), { ...quiet, onSent: (c, r) => seen.push([c, r]) });
+  assert.deepEqual(seen, [["kwkL", "k"], [STOP, "k"]]);
+});

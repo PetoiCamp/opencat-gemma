@@ -38,7 +38,7 @@ export function plan(contract, commands, log = console.log) {
 }
 
 // Send each command and wait for the robot. On any error or abort, send STOP, then rethrow.
-export async function run(contract, commands, link, { turnSeconds = TURN_SECONDS, sleep: wait = sleep, log = console.log, signal } = {}) {
+export async function run(contract, commands, link, { turnSeconds = TURN_SECONDS, sleep: wait = sleep, log = console.log, signal, onSent } = {}) {
   const steps = plan(contract, commands, log);  // throws before anything is sent
   if (link.isBle) {
     for (const [command] of steps) if (BLE_REFUSED[command]) throw new Error(BLE_REFUSED[command]);
@@ -50,10 +50,12 @@ export async function run(contract, commands, link, { turnSeconds = TURN_SECONDS
       const echo = contract.codes[command.split(" ")[0]].echo;
       replies.push(await link.send(command, timeout, { echo, signal }));
       log(`  sent ${command.padEnd(10)} robot: ${replies.at(-1)}`);
+      onSent?.(command, replies.at(-1));
       if (timed) {
         await wait(turnSeconds, signal);
         replies.push(await link.send(STOP, CMD_TIMEOUT_S));
         log(`  sent ${STOP.padEnd(10)} robot: ${replies.at(-1)}`);
+        onSent?.(STOP, replies.at(-1));
       }
     }
   } catch (e) {
