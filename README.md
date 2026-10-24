@@ -40,6 +40,7 @@ This repo gives your team **two working demos**, so you can skip the setup troub
 | Phone: the page doesn't load | Hosted: check the address (<https://gemma.petoi.com/web/demo.html>) and the phone's internet. Your own copy: is the cable plugged in, is `python3 -m http.server 8000` running, and did you run `adb reverse tcp:8000 tcp:8000` (again after re-plugging)? |
 | Phone: "WebGPU: NO", or the model won't load | Update Chrome. Only a Pixel 7 Pro was tested; older phones may not support WebGPU or have enough memory. |
 | Phone: Connect finds no robot, or fails (e.g. "Unsupported device") | The robot is off, or something else is connected to it: the phone's or computer's own Bluetooth settings (disconnect the robot there), the Petoi app, another tab, or a teammate's laptop. |
+| Mac Chrome: "Connect failed: Unsupported device" every time | The Mac has the robot **paired** under its classic Bluetooth name (e.g. `Bittle0D_SSP`). Open System Settings → Bluetooth, choose **Forget This Device** for that entry, reload the page and connect again. This kit never uses the classic pairing. |
 | Phone: robot over Wi-Fi | Not possible from a phone page yet: Android 17 blocks Chrome from the local network. Use Bluetooth. |
 | Laptop: "Can't reach Ollama" or model missing | `ollama serve`, then `ollama pull gemma4:e2b-it-qat`. |
 | Laptop: the USB port is busy | Close the Petoi Desktop App and any serial monitor. |
