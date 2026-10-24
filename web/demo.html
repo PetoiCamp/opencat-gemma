@@ -158,6 +158,7 @@ $("connect").onclick = async () => {
       if (driver.link === c.link) { driver.link = null; setStatus("robot", "disconnected"); }  // not a replaced link
     });
     setStatus("robot", `${c.name} (${c.robot})`);
+    note(`Connected to ${c.name} (${c.robot}).`);  // so an earlier "Connect failed" note doesn't look current
     if (c.robot !== robot) {
       if (gemma) {
         setStatus("model", `switching to ${c.robot}…`);
@@ -176,7 +177,10 @@ $("connect").onclick = async () => {
     }
   } catch (e) {
     setStatus("robot", driver.link ? before : "not connected");
-    note(`Connect failed: ${e.message}`);
+    if (e.name === "NotFoundError" && /cancel/i.test(e.message)) return note("Connect cancelled.");
+    // Seen: "Unsupported device" when the robot was already connected to the computer's own Bluetooth settings.
+    note(`Connect failed: ${e.message} The robot may already be connected to this computer or phone ` +
+         "(disconnect it in the Bluetooth settings), or to another app, page or teammate. Then tap Connect robot again.");
   }
 };
 
