@@ -209,7 +209,7 @@ Gemma accuracy and latency can be checked without a robot (see below).
 - **Check Gemma on your machine:** `.venv/bin/python eval/run_eval.py --robot bittle` runs the requests in `eval/cases.<robot>.json` (or `eval/cases.json` if there is none) against Ollama and prints pass/fail and latency. Use `--robot nybble` or `--robot quaddle` for the other contracts.
 - **Tests:** `.venv/bin/python -m unittest discover tests` (no Ollama or robot needed).
 - **Protocol notes:** [docs/protocol.md](docs/protocol.md).
-- **Android (web, experimental):** `web/index.html` runs Gemma 4 E2B in Chrome on the phone (LiteRT-LM web 0.18.0, WebGPU) and runs the eval. Serve the repo with `python3 -m http.server 8000`, run `adb reverse tcp:8000 tcp:8000`, open `http://localhost:8000/web/` on the phone, and pick `gemma-4-E2B-it-web.litertlm` (from `litert-community/gemma-4-E2B-it-litert-lm` on Hugging Face). Pixel 7 Pro: 14/16, about 9 s per request. No robot connection yet. Results: `docs/superpowers/plans/2026-10-23-web-gemma-connection.md`.
+- **Android (web, experimental):** `web/index.html` runs Gemma 4 E2B in Chrome on the phone (LiteRT-LM web 0.18.0, WebGPU) and runs the eval. Serve the repo with `python3 -m http.server 8000`, run `adb reverse tcp:8000 tcp:8000`, open `http://localhost:8000/web/` on the phone, and pick `gemma-4-E2B-it-web.litertlm` (from `litert-community/gemma-4-E2B-it-litert-lm` on Hugging Face). Pixel 7 Pro: 15/16, about 2 s per request after a one-time ~7 s prompt prefill. No robot connection yet. Results: `docs/superpowers/plans/2026-10-23-web-gemma-connection.md` and `docs/superpowers/plans/2026-10-23-web-prefill-reuse.md`.
 
 ## Adding a robot
 

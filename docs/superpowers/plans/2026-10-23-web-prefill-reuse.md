@@ -206,3 +206,32 @@ git commit -m "perf(web): reuse the prefilled system prompt (<strategy>)"
 git add README.md docs/superpowers/plans/2026-10-23-web-prefill-reuse.md
 git commit -m "docs: prefill reuse results"
 ```
+
+---
+
+## Results (2026-10-23)
+
+Pixel 7 Pro, Chrome 156, `gemma-4-E2B-it-web.litertlm`, `@litert-lm/core` 0.18.0. Each strategy ran 16 cases × 2 rounds against one loaded engine, driven over CDP.
+
+| Strategy | Setup (prefill) | Errors | Passed | Avg / max | Answers vs `fresh` |
+|---|---|---|---|---|---|
+| `fresh` (previous page) | 0 s | none | 28/32 | 8.80 s / 10.72 s | baseline |
+| `clone_keep` | 6.8 s | none | 30/32 | 2.00 s / 3.92 s | 1 case differs |
+| `clone_defer` | 6.8 s | none | 30/32 | **1.93 s / 4.04 s** | 1 case differs (same as `clone_keep`) |
+
+**Hypothesis confirmed:** a clone only breaks the next `base.clone()` if it was deleted *before* that clone was made. Keeping clones (`clone_keep`), or deleting the previous one after the next exists (`clone_defer`), both ran 32 requests without an error.
+
+**The one changed answer:** `"stand up and walk forward for 5 steps, then turn left for 30 degrees"`. `fresh` gives `["kbalance 5","kwkL 30"]` (rejected by the allowlist). Both clone strategies give `["kbalance","kwkF 5","kwkL"]` (correct). Each strategy is deterministic across rounds. The likely cause (not verified) is that prefilling the prompt separately from the request changes GPU numerics enough to flip this borderline token. **Deviation:** success criterion 2 ("identical to `fresh`") was not met. The user accepted `clone_defer`, with the criterion relaxed to "no reuse errors, deterministic, accuracy not worse".
+
+**Winner: `clone_defer`.** Fastest, and only one clone alive at a time, so memory doesn't grow with chat length.
+
+**Page after the change** (Task 3; Run eval twice in a row on one load):
+
+| Run | Passed | Avg / max | Errors |
+|---|---|---|---|
+| 1 | 15/16 | 1.9 s / 3.7 s | none |
+| 2 | 15/16 | 1.8 s / 3.9 s | none |
+
+Model load 7.1 s, plus a one-time system-prompt prefill of 7.3 s. The only remaining failure is `"go back a bit and lie down" -> ["kbk 1","krest"]` (allowed; the eval wants `kbk`). Same pass count as the laptop (Ollama, 15/16, avg 0.9 s).
+
+Task 2 also ran from the Mac. The model file had to be picked on the phone each time: a page reload clears the file input, and loading 2 GB from a URL over the same USB link starved the DevTools connection.
