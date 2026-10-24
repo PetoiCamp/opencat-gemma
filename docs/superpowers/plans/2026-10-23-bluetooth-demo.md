@@ -932,3 +932,31 @@ Serve the repo (`python3 -m http.server 8000` from the worktree root), run `adb 
 git add README.md docs/superpowers/plans/2026-10-23-bluetooth-demo.md
 git commit -m "docs: Bluetooth demo page results"
 ```
+
+---
+
+## Results (2026-10-23)
+
+Pixel 7 Pro (Android 17, Chrome 156), Bittle X (B10_260527), `gemma-4-E2B-it-web.litertlm`. The page was served from the Mac over `adb reverse`; requests were typed into the page over CDP.
+
+**Tests:** node 46 (43 planned + 3 Driver stop-ticket tests from the review fixes); Python 132, unchanged.
+
+| Task 6 step | Result |
+|---|---|
+| 1. First visit | Picker shown; picked the file → loaded in 16.7 s → "keeping a copy on this phone…" about 33 s (OPFS `.crswap` grew to 2.0 GB, then was committed with `model.json`) → `ready`. |
+| 2. Reload | **No picker**; `ready (loaded in 17.3s)` from the OPFS copy. |
+| 3. Connect | Connected and detected `bittle`; Go and STOP enabled. The user saw no feedback during the handshake (about 10 s), so a "connecting…" status was added (`a778bca`). |
+| 4. "stand up then sit" | `Gemma (2.2s): kbalance, ksit`, ✓ `balance \| k`, ✓ `sit \| k`, total 3.1 s. |
+| 5a. STOP **during inference** | STOP 0.8 s after Go: `sent kbalance`, then `Gemma (1.8s): kwkF 10`, then **`stopped`. The walk was never sent** (the fixed review finding). |
+| 5b. STOP mid-walk | `stop: STOP button`, `stopping robot`, `stopped`, total 5.6 s. |
+| 6. "make me a sandwich" | `nothing to do`, nothing sent. The backflip was not sent. |
+| 7. Page hidden mid-walk | `stop: page hidden`, `stopping robot`, `stopped`, total 5.2 s. |
+| Task 4 regression (`index.html`) | Eval 15/16, avg 1.9 s, max 3.9 s (unchanged); Ask "sit down" → `sit \| k`. |
+
+The table records what the page logged. Whether the robot physically stayed still or stopped in 5a, 5b and 7 was asked of the user and is recorded below once they confirm.
+
+**Deviations:**
+- **Concurrency:** Tasks 1–3, then 4–5, were run by concurrent subagents in the shared worktree (the user asked for that). They didn't commit; each task was checked against the plan text, then committed by the controller.
+- **Plan bug:** the Task 1 test's fake conversations lacked `name`, so the log showed `clone undefined`. Fixed in the test.
+- **Review fixes:** an independent review found a real safety bug (a STOP during inference didn't cancel the plan), plus UI race conditions. Fixed in `a83ebd3`: Driver stop tickets; one request, model load or connect at a time; robot switch only after success; reconnect closes the old link; load a picked model before replacing the stored copy; STOP feedback with no request.
+- **First reload showed the picker:** the first copy had been cut short (OPFS held a 0-byte `model.litertlm` and no record), and the page correctly refused it. The copy runs after the model is ready, so reloading during "keeping a copy…" discards it. The rerun completed (above). Not changed: the status already says it is copying.
