@@ -123,6 +123,26 @@ The web page (`web/ble.js`, a port of `BleLink`) uses the same Nordic UART servi
 - **Screen locked about 30 s while idle:** the link stayed connected (`gatt.connected` true), and `ksit` worked after unlocking.
 - **Not tested:** Nybble Q and Quaddle over Web Bluetooth, longer screen-off times, other phones, and a page served over https from a real host.
 
+### Wi-Fi from a web page (phones): blocked for now
+
+Tried on 2026-10-23: Pixel 7 Pro (Android 17, SDK 37), Chrome 156.0.8078.47 (targetSdk 36), Bittle X at `ws://192.168.1.129:81` on the same 2.4 GHz network. **No web page could open the robot's WebSocket.** The page in Chrome on the phone (`web/index.html`) therefore has no Wi-Fi mode; it uses Bluetooth LE.
+
+- **The network path works:** from `adb shell` on the phone, `ping` reaches the robot and a raw WebSocket handshake gets `HTTP/1.1 101 Switching Protocols` (`Server: arduino-WebSocketsServer`).
+- **Chrome fails before connecting:** `WebSocket connection to 'ws://192.168.1.129:81/' failed: Error in connection establishment: net::ERR_LOCAL_NETWORK_PERMISSION_MISSING`. A `fetch()` to the same address fails the same way. This happened from `http://localhost:8000` (served over `adb reverse`) and from `https://example.com`, with a real tap, and no permission prompt ever appeared.
+- **Mixed content isn't the blocker on Chrome:** from the `https` page, Chrome only warned ("Insecure access is deprecated") and still tried the `ws://` connection.
+- **The blocker is Android's local network permission:**
+  - `dumpsys package com.android.chrome` shows `android.permission.ACCESS_LOCAL_NETWORK: granted=true, flags=[REVOKED_COMPAT|…]`.
+  - `appops get com.android.chrome` shows `ACCESS_LOCAL_NETWORK: ignore`, with a `rejectTime` matching the tap.
+  - Granting **Nearby devices** to Chrome (Settings → Apps → Chrome → Permissions) did not change this, and Settings shows no separate "local network" entry.
+- **This contradicts Google's docs.** They say apps targeting SDK 36 or lower on Android 17 get an implicit grant, and must not request `ACCESS_LOCAL_NETWORK` before targeting SDK 37 ([Local network permission](https://developer.android.com/privacy-and-security/local-network-permission)). Another Android browser reported the same error for `192.168.x.x` on Android 17 on 2026-10-17, after a recent update ([AABrowser #170](https://github.com/kododake/AABrowser/issues/170)). The cause isn't confirmed; it may be a recent Android 17 change.
+- **Not tried:** forcing the permission over adb (`adb shell am compat …` or `appops set …`). It might work on a test phone, but normal users can't do it.
+- **iPhone, not tested (no device):**
+  - Safari on iOS 26 has WebGPU ([web.dev](https://web.dev/blog/webgpu-supported-major-browsers)).
+  - A page would have to be served over `https` (there is no `adb reverse` equivalent), and I believe WebKit refuses `ws://` from `https` pages.
+  - iOS also has its own Local Network permission.
+  - So expect Wi-Fi from a web page to be blocked there too.
+- **What works instead:** Web Bluetooth from Chrome on Android (see above), the laptop kit's `--ws`, or a native app, which can request the permission properly. Re-test when Chrome targets SDK 37.
+
 ## Robot name (`n`)
 
 - A bare `n` returns the robot's stored name, then the `n` echo. Verified on Quaddle over USB (2026-10-23): `SerialLink.send("n", 4)` returned `Quaddle03 | n`.
