@@ -1,0 +1,11 @@
+[
+  {"robot": "bittle", "commands": ["kwkF", "ksit"], "plan": [["kwkF 3", 11, false], ["ksit", 10, false]], "log": [], "error": null},
+  {"robot": "bittle", "commands": ["kwkF 5", "kwkL"], "plan": [["kwkF 5", 15, false], ["kwkL", 10, true]], "log": [], "error": null},
+  {"robot": "bittle", "commands": ["kbk 20"], "plan": [["kbk 20", 45, false]], "log": [], "error": null},
+  {"robot": "bittle", "commands": [], "plan": [], "log": [], "error": null},
+  {"robot": "bittle", "commands": ["kwkL 90"], "plan": null, "log": [], "error": "not allowed"},
+  {"robot": "bittle", "commands": ["ksit", "XO"], "plan": null, "log": [], "error": "not allowed"},
+  {"robot": "quaddle", "commands": ["vcv", "XO", "ksit", "kwkF"], "plan": [["vcv", 10, false], ["XO", 10, false]], "log": ["  dropped ksit, kwkF after XO/Xo"], "error": null},
+  {"robot": "quaddle", "commands": ["m0 45", "Xo"], "plan": [["m0 45", 10, false], ["Xo", 10, false]], "log": [], "error": null},
+  {"robot": "quaddle", "commands": ["m0"], "plan": null, "log": [], "error": "not allowed"}
+]
