@@ -142,6 +142,9 @@ $("ask").onclick = guard(async () => {
   running = new AbortController();
   try {
     await run({ codes, pattern }, r.commands, link, { log, signal: running.signal });
+  } catch (e) {
+    if (!running.signal.aborted) throw e;
+    log(`  stopped (${e.message})`);  // a Stop the user asked for is not an error; run() already sent STOP
   } finally {
     running = null;
   }
