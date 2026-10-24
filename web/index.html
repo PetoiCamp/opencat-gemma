@@ -26,98 +26,56 @@
 <button id="copy">Copy log</button>
 <pre id="log"></pre>
 <script type="module">
-// 0.18.0 = the version Google's hosted chat demo ships. 0.18.1's JS does not match its own WASM
-// (Engine.create fails with "getMutableMainExecutorSettings is not a function" on a Pixel 7 Pro, 2026-10-23).
-import { Engine, SamplerType } from "https://cdn.jsdelivr.net/npm/@litert-lm/core@0.18.0/+esm";
+import { Engine, SamplerType } from "./litert.js";
 import { parse } from "./parse.js";
-import { connectWebBluetooth, robotFromReply } from "./ble.js";
-import { run, STOP, CMD_TIMEOUT_S } from "./runner.js";
+import { Gemma, textOf } from "./gemma.js";
+import { loadRegistry } from "./contracts.js";
+import { connectRobot } from "./ble.js";
+import { Driver } from "./driver.js";
 
 const $ = (id) => document.getElementById(id);
 const log = (s) => { $("log").textContent += s + "\n"; console.log(s); };
 const fetchText = async (p) => { const r = await fetch(p); if (!r.ok) throw new Error(`${p}: ${r.status}`); return r.text(); };
 $("env").textContent = `WebGPU: ${"gpu" in navigator ? "yes" : "NO"} | ${navigator.userAgent}`;
 
-let engine, prompt, pattern, codes, base, prev = null, running = null;
-
-const ROBOTS = ["bittle", "nybble", "quaddle"];  // contract/<robot>.json
-let link = null;
+let gemma = null;
+const driver = new Driver(log);
 // Fetched at page start: requestDevice() needs the user's tap, so connect() must not wait on the network first.
-const registryReady = Promise.all(ROBOTS.map(async (r) => {
-  const d = JSON.parse(await fetchText(`../contract/${r}.json`));
-  return [r, [d.model, d.ble_prefix]];
-})).then(Object.fromEntries);
+const registryReady = loadRegistry(fetchText);
 
 async function connect() {
-  const registry = await registryReady;
   const t = performance.now();
-  const c = await connectWebBluetooth([...Object.values(registry).map(([, p]) => p), "petoi"], log);
-  const robot = robotFromReply(c.reply, registry);
-  log(`connected to ${c.name} in ${((performance.now() - t) / 1000).toFixed(1)}s: ${c.reply} -> ${robot ?? "unknown"}`);
-  if (!robot) {
-    c.link.close();
-    throw new Error("not a robot this page knows (no contract model name in the '?' reply)");
-  }
-  link = c.link;
-  link.device.addEventListener("gattserverdisconnected", () => { log("robot disconnected"); link = null; });
-  if (robot !== $("robot").value) {
-    $("robot").value = robot;
-    await loadRobot(robot);
-  }
-}
-
-// Contract for `robot`; with a loaded model, also a new prefilled conversation (the old base and its last clone
-// are left alone: deleting clones out of order broke base.clone() in 0.18.0, and robot switches are rare).
-async function loadRobot(robot) {
-  prompt = await fetchText(`../contract/${robot}.prompt.txt`);
-  pattern = JSON.parse(await fetchText(`../contract/${robot}.schema.json`)).items.pattern;
-  codes = JSON.parse(await fetchText(`../contract/${robot}.json`)).codes;
-  if (!engine) return;
-  const t = performance.now();
-  base = await engine.createConversation({
-    preface: { messages: [{ role: "system", content: prompt }], extra_context: { enable_thinking: false } },
-    sessionConfig: { samplerParams: { type: SamplerType.GREEDY }, maxOutputTokens: 128 },
-    prefillPrefaceOnInit: true,
+  const c = await connectRobot(await registryReady, log);
+  log(`connected to ${c.name} in ${((performance.now() - t) / 1000).toFixed(1)}s: ${c.reply} -> ${c.robot}`);
+  driver.link?.close?.();  // a reconnect replaces the old link
+  driver.link = c.link;
+  c.link.device.addEventListener("gattserverdisconnected", () => {
+    if (driver.link === c.link) { log("robot disconnected"); driver.link = null; }  // not a replaced link
   });
-  prev = null;
-  log(`system prompt prefilled in ${((performance.now() - t) / 1000).toFixed(1)}s (${robot})`);
+  if (c.robot !== $("robot").value) {
+    $("robot").value = c.robot;
+    if (gemma) await gemma.setRobot(c.robot);
+  }
 }
 
 async function load() {
   const model = $("file").files[0] ?? $("url").value;
   log(`loading ${model.name ?? model} ...`);
-  const t = performance.now();
-  engine = await Engine.create({ model, mainExecutorSettings: { maxNumTokens: 2048 } });
-  log(`model loaded in ${((performance.now() - t) / 1000).toFixed(1)}s`);
-  await loadRobot($("robot").value);
+  gemma = await Gemma.load({ Engine, SamplerType }, model, { fetchText, log });
+  await gemma.setRobot($("robot").value);
   $("eval").disabled = $("ask").disabled = false;
 }
 
-const textOf = (m) => typeof m.content === "string" ? m.content
-  : (m.content ?? []).filter((p) => p.type === "text").map((p) => p.text).join("");
-
-// Dev hook for web/prefill_experiments.js (run over CDP / chrome://inspect). Getters, so it sees the loaded engine.
-window.__test = { get engine() { return engine; }, get prompt() { return prompt; }, get pattern() { return pattern; },
-                  get link() { return link; },
+// Dev hook for web/prefill_experiments.js and hardware checks over CDP / chrome://inspect.
+window.__test = { get engine() { return gemma?.engine; }, get prompt() { return gemma?.prompt; },
+                  get pattern() { return gemma?.pattern; }, get link() { return driver.link; },
                   parse, textOf, SamplerType };
-
-// Each request runs on a clone of the prefilled conversation (~2 s instead of ~9 s re-reading the prompt).
-// In 0.18.0, deleting a clone before the next base.clone() breaks it ("Dependency task 1 is invalid"), so the
-// previous clone is deleted only after the new one exists. Measured in docs/superpowers/plans/2026-10-23-web-prefill-reuse.md.
-async function ask(text) {
-  const t = performance.now();
-  const conv = await base.clone();
-  if (prev) await prev.delete();
-  prev = conv;
-  const out = textOf(await conv.sendMessage(text)).trim();
-  return { out, secs: (performance.now() - t) / 1000, ...parse(pattern, out) };
-}
 
 async function runEval() {
   const cases = JSON.parse(await fetchText("../eval/cases.json"));
   let passed = 0; const times = [];
   for (const [text, acceptable] of cases) {
-    const r = await ask(text);
+    const r = await gemma.ask(text);
     times.push(r.secs);
     const ok = r.error === null && acceptable.some((a) => JSON.stringify(a) === JSON.stringify(r.commands));
     passed += ok;
@@ -136,33 +94,15 @@ $("eval").onclick = guard(async () => {  // a second run in parallel doubles eve
   try { await runEval(); } finally { $("eval").disabled = false; }
 });
 $("ask").onclick = guard(async () => {
-  const r = await ask($("req").value);
+  const ticket = driver.ticket();  // a Stop or page hide during inference cancels this plan
+  const r = await gemma.ask($("req").value);
   log(`${r.secs.toFixed(1)}s | ${r.out} -> ${r.error ?? JSON.stringify(r.commands)}`);
-  if (!link || r.error || !r.commands.length) return;  // refused or empty: the robot is untouched
-  running = new AbortController();
-  try {
-    await run({ codes, pattern }, r.commands, link, { log, signal: running.signal });
-  } catch (e) {
-    if (!running.signal.aborted) throw e;
-    log(`  stopped (${e.message})`);  // a Stop the user asked for is not an error; run() already sent STOP
-  } finally {
-    running = null;
-  }
+  if (!driver.link || r.error || !r.commands.length) return;  // refused or empty: the robot is untouched
+  if (await driver.run(gemma.contract, r.commands, { ticket }) === "stopped") log("  stopped");
 });
-
-// Stop: abort a running plan (run() sends STOP on the way out), else send STOP directly.
-function stop(why) {
-  if (running) {
-    log(`stop: ${why}`);
-    running.abort(new Error(why));
-  } else if (link) {
-    link.send(STOP, CMD_TIMEOUT_S).then((r) => log(`  sent ${STOP} robot: ${r}`), (e) => log(`  STOP FAILED: ${e} - switch the robot off`));
-  }
-}
-$("stop").onclick = () => stop("Stop button");
-// A hidden tab may lose the Bluetooth link; a timed turn would then never get its kbalance.
-document.addEventListener("visibilitychange", () => { if (document.hidden && running) stop("page hidden"); });
-$("robot").onchange = guard(() => loadRobot($("robot").value));
+$("stop").onclick = () => driver.stop("Stop button");
+document.addEventListener("visibilitychange", () => { if (document.hidden) driver.stopIfRunning("page hidden"); });
+$("robot").onchange = guard(async () => { if (gemma) await gemma.setRobot($("robot").value); });
 $("copy").onclick = () => navigator.clipboard.writeText($("log").textContent);
 </script>
 </body>
