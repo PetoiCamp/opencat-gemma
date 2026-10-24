@@ -1,0 +1,321 @@
+{
+  "robot": "Bittle X robot dog",
+  "codes": {
+    "kwkF": {
+      "meaning": "walk forward",
+      "kind": "steps"
+    },
+    "kbk": {
+      "meaning": "walk backward",
+      "kind": "steps"
+    },
+    "kwkL": {
+      "meaning": "turn left",
+      "kind": "timed"
+    },
+    "kwkR": {
+      "meaning": "turn right",
+      "kind": "timed"
+    },
+    "ksit": {
+      "meaning": "sit",
+      "kind": "once"
+    },
+    "krest": {
+      "meaning": "lie down / rest",
+      "kind": "once"
+    },
+    "kbalance": {
+      "meaning": "stand up and balance",
+      "kind": "once"
+    },
+    "khi": {
+      "meaning": "say hi / wave",
+      "kind": "once"
+    },
+    "kvtF": {
+      "meaning": "step in place",
+      "kind": "steps"
+    },
+    "kvtL": {
+      "meaning": "spin left",
+      "kind": "timed"
+    },
+    "kvtR": {
+      "meaning": "spin right",
+      "kind": "timed"
+    },
+    "kbkL": {
+      "meaning": "back left",
+      "kind": "timed"
+    },
+    "kbkR": {
+      "meaning": "back right",
+      "kind": "timed"
+    },
+    "ktrF": {
+      "meaning": "trot forward",
+      "kind": "steps"
+    },
+    "ktrL": {
+      "meaning": "trot left",
+      "kind": "timed"
+    },
+    "ktrR": {
+      "meaning": "trot right",
+      "kind": "timed"
+    },
+    "kcrF": {
+      "meaning": "crawl forward",
+      "kind": "steps"
+    },
+    "kcrL": {
+      "meaning": "crawl left",
+      "kind": "timed"
+    },
+    "kcrR": {
+      "meaning": "crawl right",
+      "kind": "timed"
+    },
+    "kgpF": {
+      "meaning": "stride forward",
+      "kind": "steps"
+    },
+    "kgpL": {
+      "meaning": "stride left",
+      "kind": "timed"
+    },
+    "kgpR": {
+      "meaning": "stride right",
+      "kind": "timed"
+    },
+    "kphF": {
+      "meaning": "push forward",
+      "kind": "steps"
+    },
+    "kphL": {
+      "meaning": "push left",
+      "kind": "timed"
+    },
+    "kphR": {
+      "meaning": "push right",
+      "kind": "timed"
+    },
+    "kmw": {
+      "meaning": "moonwalk",
+      "kind": "timed"
+    },
+    "kbdF": {
+      "meaning": "bound forward",
+      "kind": "steps"
+    },
+    "kcarpetF": {
+      "meaning": "carpet forward",
+      "kind": "steps"
+    },
+    "kcarpetL": {
+      "meaning": "carpet left",
+      "kind": "timed"
+    },
+    "kcarpetR": {
+      "meaning": "carpet right",
+      "kind": "timed"
+    },
+    "khlw": {
+      "meaning": "small steps",
+      "kind": "timed"
+    },
+    "kjpF": {
+      "meaning": "jump forward",
+      "kind": "steps"
+    },
+    "klftF": {
+      "meaning": "lift forward",
+      "kind": "steps"
+    },
+    "klftL": {
+      "meaning": "lift left",
+      "kind": "timed"
+    },
+    "klftR": {
+      "meaning": "lift right",
+      "kind": "timed"
+    },
+    "kup": {
+      "meaning": "stand up (normal standing pose)",
+      "kind": "once"
+    },
+    "kstr": {
+      "meaning": "stretch",
+      "kind": "once"
+    },
+    "kbuttUp": {
+      "meaning": "butt up",
+      "kind": "once"
+    },
+    "khsk": {
+      "meaning": "handshake",
+      "kind": "once"
+    },
+    "kfiv": {
+      "meaning": "high five",
+      "kind": "once"
+    },
+    "khg": {
+      "meaning": "hug",
+      "kind": "once"
+    },
+    "khu": {
+      "meaning": "hands up",
+      "kind": "once"
+    },
+    "knd": {
+      "meaning": "nod",
+      "kind": "once"
+    },
+    "kcmh": {
+      "meaning": "come here",
+      "kind": "once"
+    },
+    "kgdb": {
+      "meaning": "good boy",
+      "kind": "once"
+    },
+    "kchr": {
+      "meaning": "cheers",
+      "kind": "once"
+    },
+    "kpee": {
+      "meaning": "pee",
+      "kind": "once"
+    },
+    "ksnf": {
+      "meaning": "sniff",
+      "kind": "once"
+    },
+    "kck": {
+      "meaning": "check around / look around",
+      "kind": "once"
+    },
+    "kdg": {
+      "meaning": "dig",
+      "kind": "once"
+    },
+    "kang": {
+      "meaning": "angry",
+      "kind": "once"
+    },
+    "kscrh": {
+      "meaning": "scratch",
+      "kind": "once"
+    },
+    "kwh": {
+      "meaning": "wave head / shake head",
+      "kind": "once"
+    },
+    "ktbl": {
+      "meaning": "be a table (hold still, back flat)",
+      "kind": "once"
+    },
+    "kpd": {
+      "meaning": "play dead",
+      "kind": "once"
+    },
+    "krl": {
+      "meaning": "roll",
+      "kind": "once"
+    },
+    "krc": {
+      "meaning": "recover / get back up",
+      "kind": "once"
+    },
+    "kpu": {
+      "meaning": "push ups",
+      "kind": "once"
+    },
+    "kpu1": {
+      "meaning": "one-hand push up",
+      "kind": "once"
+    },
+    "kkc": {
+      "meaning": "kick",
+      "kind": "once"
+    },
+    "klpov": {
+      "meaning": "leap over",
+      "kind": "once"
+    },
+    "khds": {
+      "meaning": "handstand",
+      "kind": "once"
+    },
+    "kbx": {
+      "meaning": "boxing",
+      "kind": "once"
+    },
+    "kflipD": {
+      "meaning": "backflip (alternative)",
+      "kind": "once"
+    },
+    "kflipF": {
+      "meaning": "front flip (alternative)",
+      "kind": "once"
+    },
+    "kjmp": {
+      "meaning": "jump",
+      "kind": "once"
+    },
+    "kbf": {
+      "meaning": "backflip",
+      "kind": "once"
+    },
+    "kff": {
+      "meaning": "front flip",
+      "kind": "once"
+    },
+    "kflip": {
+      "meaning": "flip over",
+      "kind": "once"
+    }
+  },
+  "examples": [
+    [
+      "walk forward then sit",
+      [
+        "kwkF",
+        "ksit"
+      ]
+    ],
+    [
+      "take 3 steps back and wave",
+      [
+        "kbk 3",
+        "khi"
+      ]
+    ],
+    [
+      "stand up and turn left",
+      [
+        "kbalance",
+        "kwkL"
+      ]
+    ],
+    [
+      "back up a little and rest",
+      [
+        "kbk",
+        "krest"
+      ]
+    ],
+    [
+      "face the other direction",
+      [
+        "kvtL"
+      ]
+    ],
+    [
+      "fly to the moon",
+      []
+    ]
+  ]
+}
