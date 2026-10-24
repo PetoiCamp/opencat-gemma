@@ -17,7 +17,7 @@
 <p id="env"></p>
 <label>Robot <select id="robot"><option>bittle</option><option>nybble</option></select></label>
 <p>Model: URL <input id="url" type="text"
-  value="https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it-gpu.litertlm"><br>
+  value="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.litertlm"><br>
   or file <input id="file" type="file" accept=".litertlm"></p>
 <button id="load">Load model</button>
 <button id="eval" disabled>Run eval</button>
@@ -25,11 +25,10 @@
 <button id="copy">Copy log</button>
 <pre id="log"></pre>
 <script type="module">
-import { Engine, SamplerType, loadLiteRtLm } from "https://cdn.jsdelivr.net/npm/@litert-lm/core@0.18.1/+esm";
+// 0.18.0 = the version Google's hosted chat demo ships. 0.18.1's JS does not match its own WASM
+// (Engine.create fails with "getMutableMainExecutorSettings is not a function" on a Pixel 7 Pro, 2026-10-23).
+import { Engine, SamplerType } from "https://cdn.jsdelivr.net/npm/@litert-lm/core@0.18.0/+esm";
 import { parse } from "./parse.js";
-
-// 0.18.1's DEFAULT_WASM_PATH still points at core@0.12.1/wasm, so load the matching WASM explicitly.
-const wasmReady = loadLiteRtLm("https://cdn.jsdelivr.net/npm/@litert-lm/core@0.18.1/wasm");
 
 const $ = (id) => document.getElementById(id);
 const log = (s) => { $("log").textContent += s + "\n"; console.log(s); };
@@ -44,7 +43,6 @@ async function load() {
   pattern = JSON.parse(await fetchText(`../contract/${robot}.schema.json`)).items.pattern;
   const model = $("file").files[0] ?? $("url").value;
   log(`loading ${model.name ?? model} ...`);
-  await wasmReady;
   let t = performance.now();
   engine =await Engine.create({ model, mainExecutorSettings: { maxNumTokens: 2048 } });
   log(`model loaded in ${((performance.now() - t) / 1000).toFixed(1)}s`);
