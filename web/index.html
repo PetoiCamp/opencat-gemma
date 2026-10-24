@@ -85,7 +85,10 @@ async function runEval() {
 
 const guard = (fn) => async () => { try { await fn(); } catch (e) { log(`ERROR: ${e?.stack ?? e}`); } };
 $("load").onclick = guard(load);
-$("eval").onclick = guard(runEval);
+$("eval").onclick = guard(async () => {  // a second run in parallel doubles every latency
+  $("eval").disabled = true;
+  try { await runEval(); } finally { $("eval").disabled = false; }
+});
 $("ask").onclick = guard(async () => {
   const r = await ask($("req").value);
   log(`${r.secs.toFixed(1)}s | ${r.out} -> ${r.error ?? JSON.stringify(r.commands)}`);
