@@ -45,6 +45,12 @@ class SerialLinkTest(unittest.TestCase):
         with self.assertRaises(TimeoutError):
             SerialLink(ser).send("kbalance", timeout=0.2)
 
+    def test_echo_override_waits_for_that_token(self):
+        ser = FakeSerial({"XO": b"+ enable Mouse\r\nX\r\nk\r\n"})
+        self.assertEqual(SerialLink(ser).send("XO", timeout=1, echo="k"), "+ enable Mouse | X | k")
+        with self.assertRaisesRegex(TimeoutError, "no 'k' echo"):
+            SerialLink(FakeSerial({"XO": b"+ enable Mouse\r\n"})).send("XO", timeout=0.2, echo="k")
+
     def test_query_echo_uses_question_mark(self):
         ser = FakeSerial({"?": b"G\r\nBittle X\r\nB10_260527\r\n?\r\n"})
         self.assertEqual(SerialLink(ser).send("?", timeout=1), "G | Bittle X | B10_260527 | ?")

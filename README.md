@@ -130,13 +130,18 @@ Both were checked on Bittle X with macOS (2026-10-23). Windows and Linux are not
 
 ## Commands
 
-Bittle X has 69 commands, Nybble Q 52 and Quaddle 45. Most are shared; Bittle X also has the flips, roll, jump, and some gaits (`kgp*`, `kph*`, `kmw`, and others). Nybble Q has a few of its own. Examples are below; `contract/<robot>.json` is the full source of truth (see [contract/README.md](contract/README.md)).
+Bittle X has 69 commands, Nybble Q 52 and Quaddle 100. Most are shared; Bittle X also has the flips, roll, jump, and some gaits (`kgp*`, `kph*`, `kmw`, and others). Nybble Q has a few of its own. Examples are below; `contract/<robot>.json` is the full source of truth (see [contract/README.md](contract/README.md)).
 
-**Quaddle differences:**
+**Quaddle differences:** its list combines the command table of the firmware author's Gemma prompt for Quaddle with the public web-coding list (codes in its firmware), minus 7 codes the robot doesn't have (`kgdb khg kchr kmw kcmh khu kdg`, checked on firmware Q_261022).
 - It walks backward with `kbkF` (Bittle X and Nybble Q use `kbk`).
-- It has its own gaits: `kmarchF`, `ktiptoeF`, `kdragWkF` (steps), and `ktrB`, `kwkB`, `kbbbk`, `kgallop`, `kbackScoot`, `kvt90L`/`kvt90R` (timed).
-- Its own behaviours include `kpd2`, `krc2`, `krcL`/`krcR`, `kjumpSlide` and `khighbar`.
-- It has none of `kvtF`, `kpu`, `kfiv`, `knd`, `kwh`, `kbx`, `ktbl` or the `kflip*` codes.
+- It has its own gaits: `kbdF`, `kmarchF`, `ktiptoeF`, `kdragWkF`, `kpaceF`, `ktriCatF` (steps), and `ksideL`/`ksideR`, `kvt2L`/`kvt2R`, `ktriCatL`/`ktriCatR`, `kcircle2L`, `kslide`, the `kq*` moves (`kqDance`, `kqStep`, `kqWheel`, `kqScoot`, ...), `ktrB`, `kwkB`, `kbkL`/`kbkR`, `kbbbk`, `kgallop`, `kbackScoot` and `kvt90L`/`kvt90R` (timed).
+- Its own behaviours include `kbuttUp`, `kpd2`, `krc`, `krc2`, `krcL`/`krcR`, `kjumpSlide` and `khighbar`.
+- **Eye colours:** `vcr` red, `vcb` blue, `vco` orange, `vcy` yellow, `vcg` green, `vcp` pink, `vcv` purple. **Eye expressions:** `veH` happy, `veS` sad, `veP` squint, `ved` clear, and the talking forms `velT`, `veTH`, `veTS`, `veTP`, `vetL`, `vet`. None of them move the robot.
+- **`T`** replays the skill the robot just learned. **`d`** rests (standby).
+- **Joint moves:** `m0 <angle>` turns the head (positive = left), `m8 <angle>` / `m9 <angle>` move the left / right front leg (negative = forward). The angle must be -90 to 90; only joints 0, 8 and 9 are allowed.
+- **Mouse mode:** `XO` turns the robot into a Bluetooth mouse (its motion moves the computer's cursor); `Xo` turns it back into a dog. Either one ends the request: any command after it is dropped. **`XO` is refused over `--bluetooth`,** because it disconnects the Bluetooth link; use USB or Wi-Fi.
+- **No degree turns:** `kvtL`/`kvtR` are timed turns, sent without a number. `kvtL 90` never stops by itself on current firmware (Q_261022, the same bug as on Bittle X), so the allowlist rejects angles.
+- It has none of `kvtF`, `ktbl` or the `kflip*` codes.
 
 | Group | Examples | Notes |
 |---|---|---|
@@ -181,7 +186,7 @@ Bluetooth LE and Wi-Fi (macOS, Bittle X, 2026-10-23):
 
 Not yet verified on hardware:
 - Nybble Q.
-- Quaddle beyond the checks in "Supported robots": whether `kvt90L` stops by itself (it is treated as a timed turn).
+- Quaddle beyond the checks in "Supported robots": the eye, expression, joint, `T`, `d` and `XO`/`Xo` commands were only sent directly over USB (their replies checked), not yet through chat.
 - The changed Bluetooth connect (it now always asks `?`) on Bittle X.
 - Windows and Linux (USB and Bluetooth).
 

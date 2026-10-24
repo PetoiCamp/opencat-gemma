@@ -35,6 +35,14 @@
       "meaning": "say hi / wave",
       "kind": "once"
     },
+    "ktrF": {
+      "meaning": "trot / run",
+      "kind": "steps"
+    },
+    "kcrF": {
+      "meaning": "crawl",
+      "kind": "steps"
+    },
     "kvtL": {
       "meaning": "spin left",
       "kind": "timed"
@@ -43,17 +51,97 @@
       "meaning": "spin right",
       "kind": "timed"
     },
-    "kbkL": {
-      "meaning": "back left",
-      "kind": "timed"
+    "kup": {
+      "meaning": "stand up (normal standing pose)",
+      "kind": "once"
     },
-    "kbkR": {
-      "meaning": "back right",
-      "kind": "timed"
+    "kstr": {
+      "meaning": "stretch",
+      "kind": "once"
     },
-    "ktrF": {
-      "meaning": "trot forward",
-      "kind": "steps"
+    "kpu": {
+      "meaning": "push-up",
+      "kind": "once"
+    },
+    "kjmp": {
+      "meaning": "jump",
+      "kind": "once"
+    },
+    "d": {
+      "meaning": "rest / standby / sleep / stop",
+      "kind": "once"
+    },
+    "kang": {
+      "meaning": "angry",
+      "kind": "once"
+    },
+    "kfiv": {
+      "meaning": "high-five",
+      "kind": "once"
+    },
+    "knd": {
+      "meaning": "nod",
+      "kind": "once"
+    },
+    "kwh": {
+      "meaning": "wave head / shake head",
+      "kind": "once"
+    },
+    "kzz": {
+      "meaning": "sleepy",
+      "kind": "once"
+    },
+    "kbf": {
+      "meaning": "backflip",
+      "kind": "once"
+    },
+    "kff": {
+      "meaning": "front flip",
+      "kind": "once"
+    },
+    "khds": {
+      "meaning": "handstand",
+      "kind": "once"
+    },
+    "krl": {
+      "meaning": "roll",
+      "kind": "once"
+    },
+    "kbx": {
+      "meaning": "boxing",
+      "kind": "once"
+    },
+    "kkc": {
+      "meaning": "kick",
+      "kind": "once"
+    },
+    "kjumpSlide": {
+      "meaning": "jump slide",
+      "kind": "once"
+    },
+    "T": {
+      "meaning": "replay the skill that was just learned",
+      "kind": "once"
+    },
+    "khsk": {
+      "meaning": "handshake",
+      "kind": "once"
+    },
+    "ksnf": {
+      "meaning": "sniff",
+      "kind": "once"
+    },
+    "kscrh": {
+      "meaning": "scratch",
+      "kind": "once"
+    },
+    "kpee": {
+      "meaning": "pee",
+      "kind": "once"
+    },
+    "kpd": {
+      "meaning": "play dead",
+      "kind": "once"
     },
     "ktrL": {
       "meaning": "trot left",
@@ -62,10 +150,6 @@
     "ktrR": {
       "meaning": "trot right",
       "kind": "timed"
-    },
-    "kcrF": {
-      "meaning": "crawl forward",
-      "kind": "steps"
     },
     "kcrL": {
       "meaning": "crawl left",
@@ -79,6 +163,180 @@
       "meaning": "bound forward",
       "kind": "steps"
     },
+    "kslide": {
+      "meaning": "slide",
+      "kind": "timed"
+    },
+    "kdragWkF": {
+      "meaning": "drag-walk forward",
+      "kind": "steps"
+    },
+    "kflipRoll": {
+      "meaning": "flip roll",
+      "kind": "once"
+    },
+    "ktiptoeF": {
+      "meaning": "tiptoe forward",
+      "kind": "steps"
+    },
+    "ksideL": {
+      "meaning": "side step left",
+      "kind": "timed"
+    },
+    "ksideR": {
+      "meaning": "side step right",
+      "kind": "timed"
+    },
+    "kmarchF": {
+      "meaning": "march",
+      "kind": "steps"
+    },
+    "kvt2L": {
+      "meaning": "tighter turn left",
+      "kind": "timed"
+    },
+    "kvt2R": {
+      "meaning": "tighter turn right",
+      "kind": "timed"
+    },
+    "kpaceF": {
+      "meaning": "pace forward",
+      "kind": "steps"
+    },
+    "ktriCatF": {
+      "meaning": "tripod walk forward",
+      "kind": "steps"
+    },
+    "ktriCatL": {
+      "meaning": "tripod walk left",
+      "kind": "timed"
+    },
+    "ktriCatR": {
+      "meaning": "tripod walk right",
+      "kind": "timed"
+    },
+    "kcircle2L": {
+      "meaning": "circle",
+      "kind": "timed"
+    },
+    "kqDance": {
+      "meaning": "dance",
+      "kind": "timed"
+    },
+    "kqStep": {
+      "meaning": "full step",
+      "kind": "timed"
+    },
+    "kqStepHalf": {
+      "meaning": "half step",
+      "kind": "timed"
+    },
+    "kqWheel": {
+      "meaning": "wheel",
+      "kind": "timed"
+    },
+    "kqBiped": {
+      "meaning": "biped",
+      "kind": "timed"
+    },
+    "kqScoot": {
+      "meaning": "scoot",
+      "kind": "timed"
+    },
+    "kqFrontScoot": {
+      "meaning": "front scoot",
+      "kind": "timed"
+    },
+    "kglide": {
+      "meaning": "glide",
+      "kind": "once"
+    },
+    "XO": {
+      "meaning": "become a mouse: the robot turns into a Bluetooth mouse",
+      "kind": "final",
+      "echo": "k"
+    },
+    "Xo": {
+      "meaning": "return to normal robot dog (undo XO)",
+      "kind": "final",
+      "echo": "k"
+    },
+    "vcr": {
+      "meaning": "eye color red",
+      "kind": "once"
+    },
+    "vcb": {
+      "meaning": "eye color blue",
+      "kind": "once"
+    },
+    "vco": {
+      "meaning": "eye color orange",
+      "kind": "once"
+    },
+    "vcy": {
+      "meaning": "eye color yellow",
+      "kind": "once"
+    },
+    "vcg": {
+      "meaning": "eye color green",
+      "kind": "once"
+    },
+    "vcp": {
+      "meaning": "eye color pink",
+      "kind": "once"
+    },
+    "vcv": {
+      "meaning": "eye color purple",
+      "kind": "once"
+    },
+    "vetL": {
+      "meaning": "eye expression: listen",
+      "kind": "once"
+    },
+    "velT": {
+      "meaning": "eye expression: talk, neutral",
+      "kind": "once"
+    },
+    "veTH": {
+      "meaning": "eye expression: talk + happy",
+      "kind": "once"
+    },
+    "veTS": {
+      "meaning": "eye expression: talk + sad",
+      "kind": "once"
+    },
+    "veTP": {
+      "meaning": "eye expression: talk + squint",
+      "kind": "once"
+    },
+    "vet": {
+      "meaning": "eye expression: end talk",
+      "kind": "once"
+    },
+    "ved": {
+      "meaning": "eye expression: clear expression",
+      "kind": "once"
+    },
+    "veH": {
+      "meaning": "eye expression: happy",
+      "kind": "once"
+    },
+    "veS": {
+      "meaning": "eye expression: sad",
+      "kind": "once"
+    },
+    "veP": {
+      "meaning": "eye expression: squint",
+      "kind": "once"
+    },
+    "kbkL": {
+      "meaning": "back left",
+      "kind": "timed"
+    },
+    "kbkR": {
+      "meaning": "back right",
+      "kind": "timed"
+    },
     "kbackScoot": {
       "meaning": "back scoot",
       "kind": "timed"
@@ -87,21 +345,9 @@
       "meaning": "back variant",
       "kind": "timed"
     },
-    "kdragWkF": {
-      "meaning": "drag walk",
-      "kind": "steps"
-    },
     "kgallop": {
       "meaning": "gallop",
       "kind": "timed"
-    },
-    "kmarchF": {
-      "meaning": "march forward",
-      "kind": "steps"
-    },
-    "ktiptoeF": {
-      "meaning": "tiptoe",
-      "kind": "steps"
     },
     "ktrB": {
       "meaning": "trot backward",
@@ -119,28 +365,8 @@
       "meaning": "walk backward (alternative gait)",
       "kind": "timed"
     },
-    "kup": {
-      "meaning": "stand up (normal standing pose)",
-      "kind": "once"
-    },
-    "kstr": {
-      "meaning": "stretch",
-      "kind": "once"
-    },
     "kbuttUp": {
       "meaning": "butt up",
-      "kind": "once"
-    },
-    "khsk": {
-      "meaning": "handshake",
-      "kind": "once"
-    },
-    "kpee": {
-      "meaning": "pee",
-      "kind": "once"
-    },
-    "kpd": {
-      "meaning": "play dead",
       "kind": "once"
     },
     "kpd2": {
@@ -163,25 +389,21 @@
       "meaning": "recover right",
       "kind": "once"
     },
-    "khds": {
-      "meaning": "handstand",
-      "kind": "once"
-    },
-    "kbf": {
-      "meaning": "backflip",
-      "kind": "once"
-    },
-    "kff": {
-      "meaning": "front flip",
-      "kind": "once"
-    },
-    "kjumpSlide": {
-      "meaning": "jump slide",
-      "kind": "once"
-    },
     "khighbar": {
       "meaning": "high bar",
       "kind": "once"
+    },
+    "m0": {
+      "meaning": "turn head / neck (positive angle = left, negative = right)",
+      "kind": "joint"
+    },
+    "m8": {
+      "meaning": "move left front leg / arm (negative angle = forward, positive = backward)",
+      "kind": "joint"
+    },
+    "m9": {
+      "meaning": "move right front leg / arm (negative angle = forward, positive = backward)",
+      "kind": "joint"
     }
   },
   "examples": [
@@ -225,6 +447,24 @@
       "face the other direction",
       [
         "kvtL"
+      ]
+    ],
+    [
+      "make your eyes purple",
+      [
+        "vcv"
+      ]
+    ],
+    [
+      "turn your head left",
+      [
+        "m0 45"
+      ]
+    ],
+    [
+      "become a mouse",
+      [
+        "XO"
       ]
     ],
     [

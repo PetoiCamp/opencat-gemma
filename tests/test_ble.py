@@ -101,6 +101,12 @@ class BleLinkTest(unittest.TestCase):
         self.assertEqual(link.send("kbalance", timeout=1), "balance | k")
         self.assertEqual(client.writes[-1], (ble.NUS_RX, b"kbalance\n", False))
 
+    def test_send_waits_for_echo_override(self):
+        client, link = self.link(replies={"Xo": b"mouse2up\r\nk\r\n"})
+        link.connect()
+        self.assertEqual(link.send("Xo", timeout=1, echo="k"), "mouse2up | k")
+        self.assertTrue(link.is_ble)
+
     def test_notification_split_mid_line_is_joined(self):
         _, link = self.link(replies={"kbalance": [b"bal", b"ance\r\nk\r\n"]})
         link.connect()

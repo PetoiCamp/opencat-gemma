@@ -2,6 +2,6 @@
   "type": "array",
   "items": {
     "type": "string",
-    "pattern": "^((kwkF|kbkF|ktrF|kcrF|kbdF|kdragWkF|kmarchF|ktiptoeF)( ([1-9]|1[0-9]|20))?|kwkL|kwkR|ksit|krest|kbalance|khi|kvtL|kvtR|kbkL|kbkR|ktrL|ktrR|kcrL|kcrR|kbackScoot|kbbbk|kgallop|ktrB|kvt90L|kvt90R|kwkB|kup|kstr|kbuttUp|khsk|kpee|kpd|kpd2|krc|krc2|krcL|krcR|khds|kbf|kff|kjumpSlide|khighbar)$"
+    "pattern": "^((kwkF|kbkF|ktrF|kcrF|kbdF|kdragWkF|ktiptoeF|kmarchF|kpaceF|ktriCatF)( ([1-9]|1[0-9]|20))?|(m0|m8|m9) -?(90|[1-8]?[0-9])|kwkL|kwkR|ksit|krest|kbalance|khi|kvtL|kvtR|kup|kstr|kpu|kjmp|d|kang|kfiv|knd|kwh|kzz|kbf|kff|khds|krl|kbx|kkc|kjumpSlide|T|khsk|ksnf|kscrh|kpee|kpd|ktrL|ktrR|kcrL|kcrR|kslide|kflipRoll|ksideL|ksideR|kvt2L|kvt2R|ktriCatL|ktriCatR|kcircle2L|kqDance|kqStep|kqStepHalf|kqWheel|kqBiped|kqScoot|kqFrontScoot|kglide|XO|Xo|vcr|vcb|vco|vcy|vcg|vcp|vcv|vetL|velT|veTH|veTS|veTP|vet|ved|veH|veS|veP|kbkL|kbkR|kbackScoot|kbbbk|kgallop|ktrB|kvt90L|kvt90R|kwkB|kbuttUp|kpd2|krc|krc2|krcL|krcR|khighbar)$"
   }
 }

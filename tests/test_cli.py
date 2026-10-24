@@ -80,6 +80,24 @@ class ChatTest(unittest.TestCase):
         usb.assert_not_called()
         self.assertEqual(link.sent, ["ksit"])
 
+    def test_xo_over_bluetooth_is_refused_in_chat_and_chat_continues(self):
+        link = FakeLink()
+        link.is_ble = True
+        out = io.StringIO()
+        with mock.patch.object(cli, "find_ble_robot", return_value=(link, "quaddle")), \
+             mock.patch.object(cli, "ask", side_effect=['["XO"]', '["ksit"]']), \
+             mock.patch("builtins.input", side_effect=["become a mouse", "sit", EOFError]), redirect_stdout(out):
+            cli.main(["--bluetooth"])
+        self.assertIn("Refused: XO (mouse mode) disconnects Bluetooth; use USB or Wi-Fi", out.getvalue())
+        self.assertEqual(link.sent, ["ksit"])
+
+    def test_dry_run_drops_commands_after_xo(self):
+        out = io.StringIO()
+        with mock.patch.object(cli, "ask", return_value='["XO","ksit"]'), redirect_stdout(out):
+            cli.main(["--dry-run", "--robot", "quaddle", "become a mouse and sit"])
+        self.assertIn("dropped ksit after XO/Xo", out.getvalue())
+        self.assertIn("would send: XO\n", out.getvalue())
+
     def test_ws_detects_robot_when_robot_not_given(self):
         link = FakeLink()
         with mock.patch.object(cli, "WsLink", return_value=link), \

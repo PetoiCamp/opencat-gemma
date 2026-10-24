@@ -37,6 +37,19 @@ class ContractTest(unittest.TestCase):
         self.assertEqual(registry(), {"bittle": ("Bittle", "bittle"), "nybble": ("Nybble", "nybble"),
                                       "quaddle": ("Quaddle", "quaddle")})
 
+    def test_quaddle_joint_and_final_patterns(self):
+        q = load("quaddle")
+        self.assertEqual(q.validate(["m0 45", "m8 -30", "m9 90", "m0 -90", "m0 0", "XO", "Xo", "vcv", "veH", "T", "d",
+                                     "kvtL"]), [])
+        bad = ["m0 91", "m0 -91", "m5 10", "m0", "m0 045", "kvtL 90", "XO 1", "xo", "vcv 2"]
+        self.assertEqual(q.validate(bad), bad)
+
+    def test_prompt_explains_joint_angles_and_final_codes(self):
+        q = load("quaddle")
+        self.assertIn("m0, m8, m9 must be followed by a space and an angle from -90 to 90", q.prompt)
+        self.assertIn("XO and Xo must be the last command.", q.prompt)
+        self.assertNotIn("angle", self.c.prompt)  # robots without joint codes are unchanged
+
     def test_unknown_kind_rejected(self):
         data = {"robot": "x", "codes": {"kwkL": {"meaning": "turn left", "kind": "time"}}, "examples": []}
         with self.assertRaises(ValueError):

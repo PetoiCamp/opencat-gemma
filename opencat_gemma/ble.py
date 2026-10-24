@@ -45,6 +45,8 @@ def _run(coro, timeout):
 class BleLink:
     """client: a bleak.BleakClient, or anything with async connect/start_notify/write_gatt_char/disconnect."""
 
+    is_ble = True  # the runner refuses commands that would drop a Bluetooth link (XO)
+
     def __init__(self, client):
         self.client = client
         self._buf, self._lock = "", threading.Lock()
@@ -101,12 +103,13 @@ class BleLink:
             self._buf = ""
         return " | ".join(l for l in lines if l)
 
-    def send(self, command, timeout=10, done=None):
-        """Like SerialLink.send: returns on the token echo, or earlier on a line matching the `done` regex."""
+    def send(self, command, timeout=10, done=None, echo=None):
+        """Like SerialLink.send: returns on the token echo (`echo`, default the command's first letter), or earlier
+        on a line matching the `done` regex."""
         with self._lock:
             self._buf = ""
         _run(self.client.write_gatt_char(NUS_RX, (command + "\n").encode(), response=False), timeout)
-        lines = self._lines_until(command[0], timeout, repr(command), done)
+        lines = self._lines_until(echo or command[0], timeout, repr(command), done)
         return " | ".join(l for l in lines if l)
 
     def close(self):

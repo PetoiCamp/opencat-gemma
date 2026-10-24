@@ -10,9 +10,11 @@ from pathlib import Path
 CONTRACT_DIR = Path(__file__).resolve().parent.parent / "contract"
 # One contract/<robot>.json per robot (the .prompt/.schema files next to them are generated).
 ROBOTS = tuple(sorted(p.stem for p in CONTRACT_DIR.glob("*.json") if "." not in p.stem))
-KINDS = ("steps", "timed", "once")
+KINDS = ("steps", "timed", "once", "joint", "final")
 MAX_STEPS = 20
 STEPS_RE = "([1-9]|1[0-9]|20)"  # 1..MAX_STEPS, no leading zeros
+MAX_ANGLE = 90
+ANGLE_RE = "-?(90|[1-8]?[0-9])"  # -MAX_ANGLE..MAX_ANGLE, no leading zeros
 
 
 class Contract:
@@ -24,8 +26,12 @@ class Contract:
             if v["kind"] not in KINDS:
                 raise ValueError(f"{code}: kind {v['kind']!r} must be one of {KINDS}")
         stepped = [c for c, v in self.codes.items() if v["kind"] == "steps"]
-        plain = [c for c, v in self.codes.items() if v["kind"] != "steps"]
-        self.pattern = f"^(({'|'.join(stepped)})( {STEPS_RE})?|{'|'.join(plain)})$"
+        joints = [c for c, v in self.codes.items() if v["kind"] == "joint"]
+        plain = [c for c, v in self.codes.items() if v["kind"] not in ("steps", "joint")]
+        final = [c for c, v in self.codes.items() if v["kind"] == "final"]
+        # A joint code always carries an angle; final codes (XO/Xo) and the rest are plain.
+        joint_re = f"({'|'.join(joints)}) {ANGLE_RE}|" if joints else ""
+        self.pattern = f"^(({'|'.join(stepped)})( {STEPS_RE})?|{joint_re}{'|'.join(plain)})$"
         self.schema = {"type": "array", "items": {"type": "string", "pattern": self.pattern}}
         # Examples come first: with the long code list, examples placed after it were ignored and
         # Gemma 4 E2B dropped later actions ("walk forward then sit" -> ["kwkF"]). Measured 2026-10-23.
@@ -38,6 +44,9 @@ class Contract:
             *(f"{c}: {v['meaning']}" for c, v in self.codes.items()),
             f"{', '.join(stepped)} may be followed by a space and a number of steps from 1 to {MAX_STEPS}, "
             f'e.g. "{stepped[0]} 5". Leave the number out if the request gives none.',
+            *([f"{', '.join(joints)} must be followed by a space and an angle from -{MAX_ANGLE} to {MAX_ANGLE}, "
+               f'e.g. "{joints[0]} 45".'] if joints else []),
+            *([f"{' and '.join(final)} must be the last command."] if final else []),
             "If nothing matches, return []. Reply with JSON only, no explanation.",
         ])
 

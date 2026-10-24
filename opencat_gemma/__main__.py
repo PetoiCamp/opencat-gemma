@@ -27,7 +27,10 @@ def handle(contract, text, link, args):
         shown = [c + (f" (then {STOP} after {args.turn_seconds}s)" if timed else "") for c, _, timed in plan(contract, commands)]
         print("would send: " + (", ".join(shown) or "nothing"))
         return None
-    run(contract, commands, link, turn_seconds=args.turn_seconds)
+    try:
+        run(contract, commands, link, turn_seconds=args.turn_seconds)
+    except ValueError as e:  # raised before anything is sent, e.g. XO over Bluetooth
+        return f"Refused: {e}"
     return None
 
 

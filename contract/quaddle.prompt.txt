@@ -5,6 +5,9 @@ Examples:
 "walk forward, turn left, then rest" -> ["kwkF","kwkL","krest"]
 "back up a little and rest" -> ["kbkF","krest"]
 "face the other direction" -> ["kvtL"]
+"make your eyes purple" -> ["vcv"]
+"turn your head left" -> ["m0 45"]
+"become a mouse" -> ["XO"]
 "fly to the moon" -> []
 
 You control a Petoi Quaddle mini robot dog. Translate my request into a JSON array of command strings, in order. Use ONLY these codes:
@@ -16,42 +19,99 @@ ksit: sit
 krest: lie down / rest
 kbalance: stand up and balance
 khi: say hi / wave
+ktrF: trot / run
+kcrF: crawl
 kvtL: spin left
 kvtR: spin right
-kbkL: back left
-kbkR: back right
-ktrF: trot forward
+kup: stand up (normal standing pose)
+kstr: stretch
+kpu: push-up
+kjmp: jump
+d: rest / standby / sleep / stop
+kang: angry
+kfiv: high-five
+knd: nod
+kwh: wave head / shake head
+kzz: sleepy
+kbf: backflip
+kff: front flip
+khds: handstand
+krl: roll
+kbx: boxing
+kkc: kick
+kjumpSlide: jump slide
+T: replay the skill that was just learned
+khsk: handshake
+ksnf: sniff
+kscrh: scratch
+kpee: pee
+kpd: play dead
 ktrL: trot left
 ktrR: trot right
-kcrF: crawl forward
 kcrL: crawl left
 kcrR: crawl right
 kbdF: bound forward
+kslide: slide
+kdragWkF: drag-walk forward
+kflipRoll: flip roll
+ktiptoeF: tiptoe forward
+ksideL: side step left
+ksideR: side step right
+kmarchF: march
+kvt2L: tighter turn left
+kvt2R: tighter turn right
+kpaceF: pace forward
+ktriCatF: tripod walk forward
+ktriCatL: tripod walk left
+ktriCatR: tripod walk right
+kcircle2L: circle
+kqDance: dance
+kqStep: full step
+kqStepHalf: half step
+kqWheel: wheel
+kqBiped: biped
+kqScoot: scoot
+kqFrontScoot: front scoot
+kglide: glide
+XO: become a mouse: the robot turns into a Bluetooth mouse
+Xo: return to normal robot dog (undo XO)
+vcr: eye color red
+vcb: eye color blue
+vco: eye color orange
+vcy: eye color yellow
+vcg: eye color green
+vcp: eye color pink
+vcv: eye color purple
+vetL: eye expression: listen
+velT: eye expression: talk, neutral
+veTH: eye expression: talk + happy
+veTS: eye expression: talk + sad
+veTP: eye expression: talk + squint
+vet: eye expression: end talk
+ved: eye expression: clear expression
+veH: eye expression: happy
+veS: eye expression: sad
+veP: eye expression: squint
+kbkL: back left
+kbkR: back right
 kbackScoot: back scoot
 kbbbk: back variant
-kdragWkF: drag walk
 kgallop: gallop
-kmarchF: march forward
-ktiptoeF: tiptoe
 ktrB: trot backward
 kvt90L: turn 90 left
 kvt90R: turn 90 right
 kwkB: walk backward (alternative gait)
-kup: stand up (normal standing pose)
-kstr: stretch
 kbuttUp: butt up
-khsk: handshake
-kpee: pee
-kpd: play dead
 kpd2: play dead 2
 krc: recover / get back up
 krc2: recover 2
 krcL: recover left
 krcR: recover right
-khds: handstand
-kbf: backflip
-kff: front flip
-kjumpSlide: jump slide
 khighbar: high bar
-kwkF, kbkF, ktrF, kcrF, kbdF, kdragWkF, kmarchF, ktiptoeF may be followed by a space and a number of steps from 1 to 20, e.g. "kwkF 5". Leave the number out if the request gives none.
+m0: turn head / neck (positive angle = left, negative = right)
+m8: move left front leg / arm (negative angle = forward, positive = backward)
+m9: move right front leg / arm (negative angle = forward, positive = backward)
+kwkF, kbkF, ktrF, kcrF, kbdF, kdragWkF, ktiptoeF, kmarchF, kpaceF, ktriCatF may be followed by a space and a number of steps from 1 to 20, e.g. "kwkF 5". Leave the number out if the request gives none.
+m0, m8, m9 must be followed by a space and an angle from -90 to 90, e.g. "m0 45".
+XO and Xo must be the last command.
 If nothing matches, return []. Reply with JSON only, no explanation.

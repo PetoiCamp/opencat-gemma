@@ -67,7 +67,7 @@ The starter kit currently works around this by never sending turn angles: it tim
 
 ### 4. Smaller protocol questions
 
-1. **WebSocket timing.** Over WebSocket, does `completed` for `kwkF 3` arrive after the 3 cycles finish, as the serial `k` echo does (via `deferSkillTokenEcho`)? Or does it arrive when the gait starts?
+1. ~~**WebSocket timing.**~~ **Answered (2026-10-23, Bittle X and Quaddle):** `completed` for `kwkF 3` arrives only after the walk ends, the same as the serial `k` echo. Because of this, a stop sent during a walk is rejected as "Previous web task is still running" (see 3.4).
 2. **Reboot echo.** After a reboot the firmware prints a lone `k` line first. A host waiting for a command's `k` echo could mistake that for "done". Could the boot banner avoid printing a bare `k`?
 
 ### 5. Quaddle (ESP32-S3 firmware), observed on firmware `Q_261022`, 2026-10-23
@@ -102,3 +102,8 @@ The starter kit currently works around this by never sending turn angles: it tim
    - They're also absent from the latest S3 source.
    - Should they be removed from the prompt, or are these skills planned for Quaddle?
 8. **An unknown skill still gets the `k` "done" echo.** After `?gdb?` the firmware prints `k`, so a host that waits for the echo reports success for a command that did nothing. Could an unknown skill skip the echo, or print a distinct error token?
+9. **Degree turns never stop on Quaddle either, and the Gemma prompt uses them.**
+   - On `Q_261022`, `kvtL 90` printed `initial yaw: 7495.53`, `target angle: 25.53`, and kept turning until an external stop.
+   - It's the same unwrapped-yaw symptom as Bittle (section 2).
+   - The Quaddle Gemma prompt maps "spin / turn around" to `kvtL 360` and says `kvtL/kvtR` take degrees, so a spin request would not end by itself.
+10. **`XO` (mouse mode) disconnects BLE UART clients and echoes `k` rather than `X`.** Is that intended? A host connected over BLE loses its link on `XO`.

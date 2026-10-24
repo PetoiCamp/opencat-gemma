@@ -4,6 +4,7 @@ from opencat_gemma.contract import load
 from opencat_gemma.runner import DEFAULT_STEPS, STOP, plan, run
 
 C = load("bittle")
+Q = load("quaddle")
 
 
 class FakeLink:
@@ -19,6 +20,49 @@ class FakeLink:
         if command == self.interrupt_on:
             raise KeyboardInterrupt
         return "ok | k"
+
+
+class EchoLink(FakeLink):
+    """Records the echo override, like SerialLink/BleLink accept it."""
+
+    def __init__(self, is_ble=False, **kw):
+        super().__init__(**kw)
+        self.is_ble, self.echoes = is_ble, []
+
+    def send(self, command, timeout, echo=None):
+        self.echoes.append((command, echo))
+        return super().send(command, timeout)
+
+
+class QuaddlePlanTest(unittest.TestCase):
+    def test_commands_after_a_final_code_are_dropped_and_logged(self):
+        logs = []
+        self.assertEqual(plan(Q, ["vcv", "XO", "ksit", "kwkF"], log=logs.append),
+                         [("vcv", 10, False), ("XO", 10, False)])
+        self.assertEqual(logs, ["  dropped ksit, kwkF after XO/Xo"])
+
+    def test_final_code_last_logs_nothing(self):
+        logs = []
+        self.assertEqual(plan(Q, ["m0 45", "Xo"], log=logs.append), [("m0 45", 10, False), ("Xo", 10, False)])
+        self.assertEqual(logs, [])
+
+    def test_xo_over_bluetooth_is_refused_before_any_send(self):
+        link = EchoLink(is_ble=True)
+        with self.assertRaisesRegex(ValueError, "XO \\(mouse mode\\) disconnects Bluetooth; use USB or Wi-Fi"):
+            run(Q, ["ksit", "XO"], link, log=lambda *_: None)
+        self.assertEqual(link.sent, [])
+
+    def test_xo_over_usb_and_xo_lower_over_bluetooth_are_sent(self):
+        run(Q, ["XO"], EchoLink(), log=lambda *_: None)
+        link = EchoLink(is_ble=True)
+        run(Q, ["Xo"], link, log=lambda *_: None)
+        self.assertEqual([c for c, _ in link.sent], ["Xo"])
+
+    def test_echo_override_reaches_link_send_only_when_set(self):
+        link = EchoLink()
+        run(Q, ["vcb", "m0 45", "XO"], link, log=lambda *_: None)
+        self.assertEqual(link.echoes, [("vcb", None), ("m0 45", None), ("XO", "k")])
+        self.assertEqual(run(Q, ["ksit", "m0 45"], FakeLink(), log=lambda *_: None), ["ok | k", "ok | k"])  # no echo=
 
 
 class PlanTest(unittest.TestCase):

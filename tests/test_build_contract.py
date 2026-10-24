@@ -1,6 +1,8 @@
+import io
 import json
 import sys
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
@@ -108,20 +110,136 @@ class GoldenTest(unittest.TestCase):
         self.check("nybble", NYBBLE_TABLE)
 
 
+# A made-up excerpt in the format of a Quaddle Gemma prompt's command table (not the real file).
+PROMPT_EXCERPT = """Speak as the robot.
+- Rules: kwkF is not a spin.
+
+# Command table
+
+## Gait
+kwkF [n]   walk forward
+kvtL [deg] turn left
+
+## Basic
+ksit   sit
+kgdb   good boy
+d      rest / standby
+T      replay the skill that was just learned
+
+## Extra
+kwkL / kwkR     walk left / right
+ktriCatF/L/R    tripod walk
+kqScoot / kqFrontScoot   scoot
+kslide          slide
+kjumpSlide  jump slide / saut gliss\u00e9
+
+## Transform
+XO   become a mouse (animal or computer mouse)
+Xo   return to normal robot-dog
+
+## Eye color (vc*)
+vcv purple   (if purple does nothing, try another)
+Do not confuse veT / vet with kvtL.
+
+## Examples
+User: sit
+UART: ksit
+khi    not a table row
+"""
+
+
+class PromptTableTest(unittest.TestCase):
+    def setUp(self):
+        self.rows = bc.parse_prompt_table(PROMPT_EXCERPT)
+
+    def test_rows_hints_sections_and_english_meanings(self):
+        by_code = {r[0]: r for r in self.rows}
+        self.assertEqual(by_code["kwkF"], ("kwkF", "n", "walk forward", "Gait"))
+        self.assertEqual(by_code["kvtL"], ("kvtL", "deg", "turn left", "Gait"))
+        self.assertEqual(by_code["d"], ("d", None, "rest / standby", "Basic"))
+        self.assertEqual(by_code["kjumpSlide"][2], "jump slide")  # the other-language alternative is dropped
+        self.assertEqual(by_code["XO"][2], "become a mouse")  # the (...) note is dropped
+        self.assertEqual(by_code["vcv"], ("vcv", None, "purple", "Eye color (vc*)"))
+
+    def test_slash_forms_expand_with_their_own_direction(self):
+        meanings = {r[0]: r[2] for r in self.rows}
+        self.assertEqual(meanings["kwkL"], "walk left")
+        self.assertEqual(meanings["kwkR"], "walk right")
+        self.assertEqual([meanings[c] for c in ("ktriCatF", "ktriCatL", "ktriCatR")],
+                         ["tripod walk forward", "tripod walk left", "tripod walk right"])
+        self.assertEqual((meanings["kqScoot"], meanings["kqFrontScoot"]), ("scoot", "scoot"))
+
+    def test_prose_and_examples_are_skipped(self):
+        codes = [r[0] for r in self.rows]
+        self.assertNotIn("khi", codes)  # only after ## Examples
+        self.assertEqual(len(codes), len(set(codes)))
+        self.assertEqual(codes, ["kwkF", "kvtL", "ksit", "kgdb", "d", "T", "kwkL", "kwkR", "ktriCatF", "ktriCatL",
+                                 "ktriCatR", "kqScoot", "kqFrontScoot", "kslide", "kjumpSlide", "XO", "Xo", "vcv"])
+
+    def test_no_table_raises(self):
+        with self.assertRaises(ValueError):
+            bc.parse_prompt_table("just prose")
+
+    def test_build_kinds_exclude_echo_and_joints(self):
+        spec = bc.ROBOTS["quaddle"]
+        codes = bc.build_from_prompt(self.rows, spec["core"], {"kgdb"}, spec["meaning_fix"], bc.QUADDLE_PROMPT)
+        self.assertEqual(list(codes)[:8], list(spec["core"]))
+        self.assertNotIn("kgdb", codes)
+        self.assertEqual(codes["kwkL"], {"meaning": "turn left", "kind": "timed"})  # core wins
+        kinds = {c: v["kind"] for c, v in codes.items()}
+        self.assertEqual([kinds[c] for c in ("kvtL", "ktriCatF", "ktriCatL", "kslide", "kqScoot", "kjumpSlide",
+                                             "d", "T", "vcv")],
+                         ["timed", "steps", "timed", "timed", "timed", "once", "once", "once", "once"])
+        self.assertEqual(codes["XO"]["kind"], "final")
+        self.assertEqual((codes["XO"]["echo"], codes["Xo"]["echo"]), ("k", "k"))
+        self.assertNotIn("echo", codes["ksit"])
+        self.assertEqual(codes["vcv"]["meaning"], "eye color purple")
+        self.assertEqual(list(codes)[-3:], ["m0", "m8", "m9"])
+        self.assertEqual({codes[j]["kind"] for j in ("m0", "m8", "m9")}, {"joint"})
+
+    def test_union_with_web_codes_keeps_prompt_meaning_and_drops_excludes(self):
+        spec = bc.ROBOTS["quaddle"]
+        web = {**{c: {"meaning": m, "kind": k} for c, (m, k) in spec["core"].items()},
+               "ktrB": {"meaning": "trot backward", "kind": "timed"}, "kslide": {"meaning": "web slide", "kind": "once"},
+               "kgdb": {"meaning": "good boy", "kind": "once"}, "krc": {"meaning": "recover", "kind": "once"}}
+        codes = bc.build_from_prompt(self.rows, spec["core"], {"kgdb"}, spec["meaning_fix"], bc.QUADDLE_PROMPT,
+                                     web_codes=web)
+        self.assertIn("vcv", codes)  # prompt only
+        self.assertEqual(codes["ktrB"], {"meaning": "trot backward", "kind": "timed"})  # web only
+        self.assertEqual(codes["krc"]["kind"], "once")
+        self.assertEqual(codes["kslide"], {"meaning": "slide", "kind": "timed"})  # in both: the prompt table wins
+        self.assertNotIn("kgdb", codes)
+        self.assertEqual(list(codes)[-3:], ["m0", "m8", "m9"])
+
+    def test_cli_needs_a_source(self):
+        with self.assertRaises(SystemExit), redirect_stderr(io.StringIO()):
+            bc.main(["--robot", "quaddle"])
+
+
 class QuaddleContractTest(unittest.TestCase):
     def test_kind_rules_hold_in_the_committed_contract(self):
         codes = json.loads((CONTRACT_DIR / "quaddle.json").read_text())["codes"]
         core = bc.ROBOTS["quaddle"]["core"]
         for code, spec in codes.items():
             want = core[code][1] if code in core else None
-            if want is None and spec["kind"] != "once":  # a walking gait
+            if want is None and spec["kind"] in ("steps", "timed"):  # a walking gait
                 want = "steps" if code.endswith("F") else "timed"
             if want:
                 self.assertEqual(spec["kind"], want, code)
         self.assertNotIn("kbk", codes)
         self.assertEqual(codes["kbkF"]["kind"], "steps")
-        for setup in ("kcalib", "kzero", "kts", "d"):
-            self.assertNotIn(setup, codes)
+        self.assertEqual((codes["kvtL"]["kind"], codes["kvtR"]["kind"]), ("timed", "timed"))  # degree turns never stop
+        for missing in ("kcalib", "kzero", "kts", "kgdb", "khg", "kchr", "kmw", "kcmh", "khu", "kdg"):
+            self.assertNotIn(missing, codes)
+        for code in ("d", "T", "vcv", "veH", "m0", "m8", "m9", "XO", "Xo", "ktrB", "kgallop", "kvt90L", "krc",
+                     "khighbar"):  # prompt-table and web-list codes
+            self.assertIn(code, codes)
+        for gait in ("kbkL", "kbkR", "kbackScoot", "kbbbk", "kgallop", "ktrB", "kvt90L", "kvt90R", "kwkB"):
+            self.assertEqual(codes[gait]["kind"], "timed", gait)
+        for move in ("kbuttUp", "kpd2", "krc", "krc2", "krcL", "krcR", "khighbar"):
+            self.assertEqual(codes[move]["kind"], "once", move)
+        self.assertEqual({codes[c]["kind"] for c in ("XO", "Xo")}, {"final"})
+        self.assertEqual({codes[c].get("echo") for c in ("XO", "Xo")}, {"k"})
 
 
 if __name__ == "__main__":

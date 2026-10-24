@@ -40,17 +40,19 @@ class SerialLink:
     def __init__(self, ser):
         self.ser = ser
 
-    def send(self, command, timeout=10, done=None):
-        """Returns on the token echo, or earlier on a complete line matching the `done` regex (if given)."""
+    def send(self, command, timeout=10, done=None, echo=None):
+        """Returns on the token echo (`echo`, default the command's first letter), or earlier on a complete line
+        matching the `done` regex (if given)."""
+        token = echo or command[0]
         self.ser.write((command + "\n").encode())
         buf, end = "", time.monotonic() + timeout
         while time.monotonic() < end:
             buf += self.ser.read(4096).decode("ISO-8859-1")
             lines = [l.strip() for l in buf.split("\n")[:-1]]  # complete lines only
-            if command[0].lower() in (l.lower() for l in lines) or (done and any(done.search(l) for l in lines)):
+            if token.lower() in (l.lower() for l in lines) or (done and any(done.search(l) for l in lines)):
                 return " | ".join(l for l in lines if l)
             time.sleep(0.01)
-        raise TimeoutError(f"no {command[0]!r} echo for {command!r} within {timeout}s, got {buf!r}")
+        raise TimeoutError(f"no {token!r} echo for {command!r} within {timeout}s, got {buf!r}")
 
     def close(self):
         self.ser.close()
@@ -177,8 +179,8 @@ class WsLink:
 
     BUSY = "Previous web task is still running"
 
-    def send(self, command, timeout=10):
-        """Send one command as its own task. If the firmware is still running an earlier task (e.g. a walk that
+    def send(self, command, timeout=10, echo=None):
+        """Send one command as its own task (`echo` is ignored: the firmware reports completion itself). If the firmware is still running an earlier task (e.g. a walk that
         Ctrl+C interrupted), it drops our command but also clears that task (webServer.h errorWebTask), so we
         retry once. Without this, STOP was rejected over Wi-Fi and the robot kept walking."""
         try:
