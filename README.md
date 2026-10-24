@@ -219,8 +219,21 @@ Gemma 4 E2B runs **on the phone**, in Chrome (LiteRT-LM web 0.18.0, WebGPU), and
 
 - An Android phone with **Chrome**. In Brave, Web Bluetooth is off by default (see "Browsers" below).
 - A USB cable, with **USB debugging** turned on on the phone. On the laptop: `adb` (Android platform-tools) and Python 3.
-- The model file on the phone: `gemma-4-E2B-it-web.litertlm` (2.0 GB), from `litert-community/gemma-4-E2B-it-litert-lm` on Hugging Face. Download it on the phone, or from the laptop: `adb push gemma-4-E2B-it-web.litertlm /sdcard/Download/`.
+- The model file on the phone (see [The model](#the-model) below).
 - The robot switched on, with the **Petoi phone app closed** (only one Bluetooth client can connect).
+
+### The model
+
+**Tested:** `gemma-4-E2B-it-web.litertlm` (Gemma 4 E2B, instruction-tuned, web build, 2,008,432,640 bytes) from the Hugging Face repo [litert-community/gemma-4-E2B-it-litert-lm](https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm). No login needed.
+
+- Direct download: <https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.litertlm>
+- Put it in the phone's **Downloads**: open the link in Chrome on the phone, or download it on the laptop and run `adb push gemma-4-E2B-it-web.litertlm /sdcard/Download/`.
+- **Other files in the same repo were not tested** with these pages:
+  - `gemma-4-E2B-it.litertlm` (2.6 GB, the same size as the E2B model the Android AI Edge Gallery app shows);
+  - `gemma-4-E2B-it-gpu.litertlm`;
+  - the chip-specific builds.
+- **Gemma 4 E4B** (`litert-community/gemma-4-E4B-it-litert-lm`) was tried before the library version was fixed, and failed for that reason. It was not retried.
+- The library version matters: the pages pin `@litert-lm/core` 0.18.0 (`web/litert.js`), because 0.18.1 failed to load the model.
 
 ### Start (every session)
 
