@@ -121,6 +121,7 @@ The web page (`web/ble.js`, a port of `BleLink`) uses the same Nordic UART servi
 - **Stop mid-walk:** during `kwkF 10`, `kbalance` was accepted in about 0.6 s, and the robot stopped and stood. Unlike the Wi-Fi notes, no retry was needed.
 - **Page hidden mid-walk** (switched to another app): the page sent `kbalance` while hidden, the robot stopped, and the link stayed up.
 - **Screen locked about 30 s while idle:** the link stayed connected (`gatt.connected` true), and `ksit` worked after unlocking.
+- **Browsers:** all of the above is Chrome. In **Brave** (Android), the page and Gemma worked, but `requestDevice` failed with "Web Bluetooth API globally disabled": Brave turns Web Bluetooth off by default. Enabling it in `brave://flags` (search "Web Bluetooth") should help, but was not tested.
 - **Not tested:** Nybble Q and Quaddle over Web Bluetooth, longer screen-off times, other phones, and a page served over https from a real host.
 
 ### Wi-Fi from a web page (phones): blocked for now
