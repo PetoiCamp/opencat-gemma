@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petoi Gemma Demo</title>
+<style>
+  :root { --bg: #fff; --fg: #111; --muted: #666; --card: #f2f2f2; --ok: #1a7f37; --bad: #c62828; --stop: #d32f2f; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111; --fg: #eee; --muted: #aaa; --card: #222; --ok: #4caf50; --bad: #ef5350; --stop: #e53935; }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; padding: 16px; font: 16px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--fg);
+         display: flex; flex-direction: column; gap: 12px; min-height: 100vh; }
+  h1 { font-size: 20px; margin: 0; }
+  #status { color: var(--muted); font-size: 14px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button { font: inherit; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--muted); background: var(--card); color: var(--fg); }
+  button:disabled { opacity: .4; }
+  #chat { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .turn { background: var(--card); border-radius: 8px; padding: 8px 10px; }
+  .req { font-weight: 600; }
+  .line { font-family: ui-monospace, monospace; font-size: 14px; word-break: break-word; }
+  .ok { color: var(--ok); }
+  .bad { color: var(--bad); }
+  .muted { color: var(--muted); font-size: 13px; }
+  form { display: flex; gap: 8px; }
+  input[type=text] { flex: 1; min-width: 0; font: inherit; padding: 10px; border-radius: 8px; border: 1px solid var(--muted); background: var(--bg); color: var(--fg); }
+  #stop { width: 100%; min-height: 56px; font-size: 20px; font-weight: 700; background: var(--stop); color: #fff; border: none; }
+</style>
+</head>
+<body>
+<h1>Petoi + Gemma, on this phone</h1>
+<div id="status"></div>
+<div class="row">
+  <label id="pick" hidden>Model file <input id="file" type="file" accept=".litertlm"></label>
+  <button id="change" hidden>Change model</button>
+  <button id="connect">Connect robot</button>
+</div>
+<div id="chat"></div>
+<form id="form"><input id="req" type="text" placeholder="walk forward then sit" autocomplete="off"><button id="go" disabled>Go</button></form>
+<button id="stop" disabled>STOP</button>
+<script type="module">
+import { Engine, SamplerType } from "./litert.js";
+import { Gemma } from "./gemma.js";
+import { saveModel, loadModel } from "./model_store.js";
+import { loadRegistry } from "./contracts.js";
+import { connectRobot } from "./ble.js";
+import { Driver } from "./driver.js";
+
+const $ = (id) => document.getElementById(id);
+const fetchText = async (p) => { const r = await fetch(p); if (!r.ok) throw new Error(`${p}: ${r.status}`); return r.text(); };
+const since = (t) => ((performance.now() - t) / 1000).toFixed(1);
+
+let gemma = null, robot = "bittle", opfs = null, turn = null;
+const status = { model: "not loaded", robot: "not connected" };
+const registryReady = loadRegistry(fetchText);  // ready before the Connect tap (requestDevice needs the tap)
+
+// Robot progress goes into the current chat entry: "sent ..." lines become ✓ lines.
+const driver = new Driver((s) => {
+  s = s.trim();
+  if (!turn || s.startsWith("sent ")) return;  // sent lines come through onSent instead
+  turn.line(s.startsWith("STOP FAILED") ? `✗ ${s}` : s, s.startsWith("STOP FAILED") ? "line bad" : "muted");
+});
+
+function refresh() {
+  $("status").textContent = `model: ${status.model} · robot: ${status.robot}`;
+  $("go").disabled = !gemma || !driver.link || driver.busy;
+  $("stop").disabled = !driver.link;
+}
+const setStatus = (key, value) => { status[key] = value; refresh(); };
+
+// A chat entry: the request, then one line per event.
+function newTurn(text) {
+  const div = document.createElement("div");
+  div.className = "turn";
+  const req = document.createElement("div");
+  req.className = "req";
+  req.textContent = text;
+  div.append(req);
+  $("chat").append(div);
+  div.scrollIntoView({ block: "end" });
+  return {
+    line(s, cls = "line") {
+      const d = document.createElement("div");
+      d.className = cls;
+      d.textContent = s;
+      div.append(d);
+      d.scrollIntoView({ block: "end" });
+    },
+  };
+}
+const note = (s) => newTurn("").line(s, "muted");
+
+// file: a picked File, or null to use the copy kept on the phone.
+async function startModel(file) {
+  try {
+    let model = file;
+    if (file) {
+      setStatus("model", "keeping a copy on this phone…");
+      try {
+        if (!opfs) throw new Error("no private storage in this browser");
+        await saveModel(file, opfs);
+      } catch (e) {
+        note(`Couldn't keep a copy of the model (${e.message}); you'll need to pick it again next time.`);
+      }
+    } else {
+      const stored = opfs && await loadModel(opfs);
+      if (!stored) {
+        $("pick").hidden = false;
+        setStatus("model", "pick the model file (gemma-4-E2B-it-web.litertlm)");
+        return;
+      }
+      model = stored.file;
+    }
+    setStatus("model", "loading…");
+    const t = performance.now();
+    await gemma?.close();
+    gemma = null;
+    const g = await Gemma.load({ Engine, SamplerType }, model, { fetchText });
+    await g.setRobot(robot);
+    gemma = g;
+    $("pick").hidden = true;
+    $("change").hidden = false;
+    setStatus("model", `ready (loaded in ${since(t)}s)`);
+  } catch (e) {
+    gemma = null;
+    setStatus("model", `error: ${e.message}`);
+  }
+}
+
+$("file").onchange = () => { if ($("file").files[0]) startModel($("file").files[0]); };
+$("change").onclick = () => { $("pick").hidden = false; };
+
+$("connect").onclick = async () => {
+  try {
+    const c = await connectRobot(await registryReady, () => {});
+    driver.link = c.link;
+    c.link.device.addEventListener("gattserverdisconnected", () => { driver.link = null; setStatus("robot", "disconnected"); });
+    setStatus("robot", `${c.name} (${c.robot})`);
+    if (c.robot !== robot) {
+      robot = c.robot;
+      if (gemma) {
+        setStatus("model", `switching to ${robot}…`);
+        await gemma.setRobot(robot);
+        setStatus("model", "ready");
+      }
+    }
+  } catch (e) {
+    note(`Connect failed: ${e.message}`);
+  }
+};
+
+$("form").onsubmit = async (ev) => {
+  ev.preventDefault();
+  const text = $("req").value.trim();
+  if (!text || $("go").disabled) return;
+  $("req").value = "";
+  turn = newTurn(text);
+  const t = performance.now();
+  $("go").disabled = true;
+  try {
+    const r = await gemma.ask(text);
+    if (r.error) return turn.line(`✗ not allowed, robot untouched (${r.error})`, "line bad");
+    if (!r.commands.length) return turn.line("nothing to do", "muted");
+    turn.line(`Gemma (${r.secs.toFixed(1)}s): ${r.commands.join(", ")}`, "muted");
+    const outcome = driver.run(gemma.contract, r.commands, { onSent: (c, reply) => turn.line(`✓ ${c} → ${reply}`, "line ok") });
+    refresh();
+    if (await outcome === "stopped") turn.line("stopped", "line bad");
+  } catch (e) {
+    turn.line(`✗ ${e.message}`, "line bad");
+  } finally {
+    turn.line(`total ${since(t)}s`, "muted");
+    refresh();
+  }
+};
+
+$("stop").onclick = () => driver.stop("STOP button");
+document.addEventListener("visibilitychange", () => { if (document.hidden) driver.stopIfRunning("page hidden"); });
+
+refresh();
+try { opfs = await navigator.storage.getDirectory(); } catch { opfs = null; }
+startModel(null);
+</script>
+</body>
+</html>
