@@ -35,7 +35,7 @@ const log = (s) => { $("log").textContent += s + "\n"; console.log(s); };
 const fetchText = async (p) => { const r = await fetch(p); if (!r.ok) throw new Error(`${p}: ${r.status}`); return r.text(); };
 $("env").textContent = `WebGPU: ${"gpu" in navigator ? "yes" : "NO"} | ${navigator.userAgent}`;
 
-let engine, prompt, pattern;
+let engine, prompt, pattern, base, prev = null;
 
 async function load() {
   const robot = $("robot").value;
@@ -46,6 +46,14 @@ async function load() {
   let t = performance.now();
   engine =await Engine.create({ model, mainExecutorSettings: { maxNumTokens: 2048 } });
   log(`model loaded in ${((performance.now() - t) / 1000).toFixed(1)}s (${robot})`);
+  t = performance.now();
+  base = await engine.createConversation({
+    preface: { messages: [{ role: "system", content: prompt }], extra_context: { enable_thinking: false } },
+    sessionConfig: { samplerParams: { type: SamplerType.GREEDY }, maxOutputTokens: 128 },
+    prefillPrefaceOnInit: true,
+  });
+  prev = null;
+  log(`system prompt prefilled in ${((performance.now() - t) / 1000).toFixed(1)}s`);
   $("eval").disabled = $("ask").disabled = false;
 }
 
@@ -56,20 +64,16 @@ const textOf = (m) => typeof m.content === "string" ? m.content
 window.__test = { get engine() { return engine; }, get prompt() { return prompt; }, get pattern() { return pattern; },
                   parse, textOf, SamplerType };
 
-// A fresh conversation per request, like the laptop's Ollama call. Cloning one prefilled conversation failed on
-// the second clone in 0.18.0 ("Dependency task 1 is invalid", Pixel 7 Pro, 2026-10-23); the demo never clones.
+// Each request runs on a clone of the prefilled conversation (~2 s instead of ~9 s re-reading the prompt).
+// In 0.18.0, deleting a clone before the next base.clone() breaks it ("Dependency task 1 is invalid"), so the
+// previous clone is deleted only after the new one exists. Measured in docs/superpowers/plans/2026-10-23-web-prefill-reuse.md.
 async function ask(text) {
   const t = performance.now();
-  const conv = await engine.createConversation({
-    preface: { messages: [{ role: "system", content: prompt }], extra_context: { enable_thinking: false } },
-    sessionConfig: { samplerParams: { type: SamplerType.GREEDY }, maxOutputTokens: 128 },
-  });
-  try {
-    const out = textOf(await conv.sendMessage(text)).trim();
-    return { out, secs: (performance.now() - t) / 1000, ...parse(pattern, out) };
-  } finally {
-    await conv.delete();
-  }
+  const conv = await base.clone();
+  if (prev) await prev.delete();
+  prev = conv;
+  const out = textOf(await conv.sendMessage(text)).trim();
+  return { out, secs: (performance.now() - t) / 1000, ...parse(pattern, out) };
 }
 
 async function runEval() {
