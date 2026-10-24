@@ -953,7 +953,9 @@ Pixel 7 Pro (Android 17, Chrome 156), Bittle X (B10_260527), `gemma-4-E2B-it-web
 | 7. Page hidden mid-walk | `stop: page hidden`, `stopping robot`, `stopped`, total 5.2 s. |
 | Task 4 regression (`index.html`) | Eval 15/16, avg 1.9 s, max 3.9 s (unchanged); Ask "sit down" → `sit \| k`. |
 
-The table records what the page logged. Whether the robot physically stayed still or stopped in 5a, 5b and 7 was asked of the user and is recorded below once they confirm.
+The table records what the page logged. **Physical behaviour, confirmed by the user on a re-run (Chrome):** 5a: the robot did not walk; 5b: it stopped about 3 s into the walk and stood; 7: it stopped when the user switched apps. Re-run logs: 5a `Gemma (1.9s): kwkF 10` → `stopped`; 5b total 5.6 s; 7 total 6.3 s.
+
+**Brave:** the demo loaded the model in Brave (Android), but Connect failed with "Web Bluetooth API globally disabled". Brave turns Web Bluetooth off by default (`brave://flags`); Chrome was used for all checks.
 
 **Deviations:**
 - **Concurrency:** Tasks 1–3, then 4–5, were run by concurrent subagents in the shared worktree (the user asked for that). They didn't commit; each task was checked against the plan text, then committed by the controller.
