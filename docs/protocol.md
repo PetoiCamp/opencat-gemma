@@ -126,10 +126,10 @@ The web page (`web/ble.js`, a port of `BleLink`) uses the same Nordic UART servi
 
 ### Wi-Fi from a web page (phones): blocked for now
 
-Tried on 2026-10-23: Pixel 7 Pro (Android 17, SDK 37), Chrome 156.0.8078.47 (targetSdk 36), Bittle X at `ws://192.168.1.129:81` on the same 2.4 GHz network. **No web page could open the robot's WebSocket.** The page in Chrome on the phone (`web/index.html`) therefore has no Wi-Fi mode; it uses Bluetooth LE.
+Tried on 2026-10-23: Pixel 7 Pro (Android 17, SDK 37), Chrome 156.0.8078.47 (targetSdk 36), Bittle X at `ws://<robot-ip>:81` on the same 2.4 GHz network. **No web page could open the robot's WebSocket.** The page in Chrome on the phone (`web/index.html`) therefore has no Wi-Fi mode; it uses Bluetooth LE.
 
 - **The network path works:** from `adb shell` on the phone, `ping` reaches the robot and a raw WebSocket handshake gets `HTTP/1.1 101 Switching Protocols` (`Server: arduino-WebSocketsServer`).
-- **Chrome fails before connecting:** `WebSocket connection to 'ws://192.168.1.129:81/' failed: Error in connection establishment: net::ERR_LOCAL_NETWORK_PERMISSION_MISSING`. A `fetch()` to the same address fails the same way. This happened from `http://localhost:8000` (served over `adb reverse`) and from `https://example.com`, with a real tap, and no permission prompt ever appeared.
+- **Chrome fails before connecting:** `WebSocket connection to 'ws://<robot-ip>:81/' failed: Error in connection establishment: net::ERR_LOCAL_NETWORK_PERMISSION_MISSING`. A `fetch()` to the same address fails the same way. This happened from `http://localhost:8000` (served over `adb reverse`) and from `https://example.com`, with a real tap, and no permission prompt ever appeared.
 - **Mixed content isn't the blocker on Chrome:** from the `https` page, Chrome only warned ("Insecure access is deprecated") and still tried the `ws://` connection.
 - **The blocker is Android's local network permission:**
   - `dumpsys package com.android.chrome` shows `android.permission.ACCESS_LOCAL_NETWORK: granted=true, flags=[REVOKED_COMPAT|…]`.
