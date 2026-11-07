@@ -353,6 +353,17 @@ Petoi robots accept add-on sensor modules. None of them is integrated with this 
 - [Back touch sensor](https://guide.petoi.com/extensible-modules/back-touch-sensor)
 - [Petoi AI Vision module](https://guide.petoi.com/extensible-modules/petoi-ai-vision-module)
 
+## Showcase
+
+Petoi brought robots to [AGI House's Google Gemma Hardware Hackathon](https://www.agihouse.org/events/the-google-gemma-hardware-hackathon), and two teams chose Quaddle to build on with Gemma:
+
+| Project | Phone | What it does |
+|---------|-------|--------------|
+| [Family Petoi](https://github.com/kiddjacky/family_petoi) | Android (OnePlus 12) | Say "go to the water bottle" and the robot walks there. Gemma 4 E2B reads the request, an on-device object detector finds the object and the robot in the camera view, and the phone greets you and suggests a parent–child game when it arrives. English and Chinese speech. |
+| [Bolt](https://github.com/abhinav30219/boltpublic) | iPhone | A health companion: Gemma 4 E2B reads live heart rate (any standard Bluetooth heart-rate device) and phone motion data, writes short insight cards and chat answers, and a 3D companion on screen mirrors the connected Quaddle's moves. |
+
+Both run Gemma on the phone and drive the robot over Bluetooth, with no cloud calls. Built something with this repo? Open an issue or pull request to add it here.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
