@@ -25,6 +25,7 @@
   .ok { color: var(--ok); }
   .bad { color: var(--bad); }
   .muted { color: var(--muted); font-size: 13px; }
+  a { color: inherit; }
   form { display: flex; gap: 8px; }
   input[type=text] { flex: 1; min-width: 0; font: inherit; padding: 10px; border-radius: 8px; border: 1px solid var(--muted); background: var(--bg); color: var(--fg); }
   #stop { width: 100%; min-height: 56px; font-size: 20px; font-weight: 700; background: var(--stop); color: #fff; border: none; }
@@ -38,6 +39,9 @@
   <button id="change" hidden>Change model</button>
   <button id="connect">Connect robot</button>
 </div>
+<p id="get" class="muted" hidden>No model yet? Download
+  <a href="https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.litertlm">gemma-4-E2B-it-web.litertlm</a>
+  (2 GB, no login), then pick it above. This page keeps a copy, so you only do this once.</p>
 <div id="chat"></div>
 <form id="form"><input id="req" type="text" placeholder="walk forward then sit" autocomplete="off"><button id="go" disabled>Go</button></form>
 <button id="stop" disabled>STOP</button>
@@ -106,7 +110,7 @@ async function startModel(file) {
     if (!file) {
       const stored = opfs && await loadModel(opfs);
       if (!stored) {
-        $("pick").hidden = false;
+        $("pick").hidden = $("get").hidden = false;
         setStatus("model", "pick the model file (gemma-4-E2B-it-web.litertlm)");
         return;
       }
@@ -122,7 +126,7 @@ async function startModel(file) {
     await g.setRobot(robot);
     if (g.robot !== robot) await g.setRobot(robot);  // Connect may have changed robot meanwhile
     gemma = g;
-    $("pick").hidden = true;
+    $("pick").hidden = $("get").hidden = true;
     $("change").hidden = false;
     const loaded = `ready (loaded in ${since(t)}s)`;
     if (file) {  // saved only once it loads, so a bad file is never kept
@@ -145,7 +149,7 @@ async function startModel(file) {
 }
 
 $("file").onchange = () => { if ($("file").files[0]) startModel($("file").files[0]); };
-$("change").onclick = () => { $("pick").hidden = false; };
+$("change").onclick = () => { $("pick").hidden = $("get").hidden = false; };
 
 $("connect").onclick = async () => {
   const before = status.robot;
