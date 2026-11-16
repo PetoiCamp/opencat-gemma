@@ -10,10 +10,10 @@ Petoi brought robots to [AGI House's Google Gemma Hardware Hackathon](https://ww
 
 | Project | Phone | What it does |
 |---------|-------|--------------|
-| [Family Petoi](https://github.com/kiddjacky/family_petoi) | Android (OnePlus 12) | Say "go to the water bottle" and the robot walks there. Gemma 4 E2B reads the request, an on-device object detector finds the object and the robot in the camera view, and the phone greets you and suggests a parent–child game when it arrives. English and Chinese speech. |
+| [Family Petoi](https://github.com/kiddjacky/family_petoi) | Android (OnePlus 12) | Say "go to the water bottle" and the robot walks there. Gemma 4 E2B reads the request, an on-device object detector finds the object and the robot in the camera view, and the phone greets you when it arrives; a parent–child game was planned but not finished. English and Chinese speech. |
 | [Bolt](https://github.com/abhinav30219/boltpublic) | iPhone | A health companion: Gemma 4 E2B reads live heart rate (any standard Bluetooth heart-rate device) and phone motion data, writes short insight cards and chat answers, and a 3D companion on screen mirrors the connected Quaddle's moves. |
 
-Both run Gemma on the phone and drive the robot over Bluetooth, with no cloud calls. To try the same idea with no setup, open this repo's hosted pages in Chrome: the [demo page](https://gemma.petoi.com/web/demo.html) (type a request, and the robot does it) or the [test page](https://gemma.petoi.com/web/) (check Gemma, no robot needed). Built something with this repo? Open an issue or pull request to add it here.
+Both run Gemma on the phone and drive the robot over Bluetooth, with no cloud calls. How both teams built them: [Physical AI on a Phone: Two Google Gemma Hackathon Apps That Move a Robot Dog](https://www.petoi.com/blogs/blog/gemma-on-device-physical-ai-robot-dog-hackathon). To try the same idea with no setup, open this repo's hosted pages in Chrome: the [demo page](https://gemma.petoi.com/web/demo.html) (type a request, and the robot does it) or the [test page](https://gemma.petoi.com/web/) (check Gemma, no robot needed). Built something with this repo? Open an issue or pull request to add it here.
 
 ## Hackathon quick start
 
