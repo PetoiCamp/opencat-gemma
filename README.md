@@ -4,6 +4,8 @@ Talk to a Petoi robot (Bittle X, Nybble Q or Quaddle) with Gemma running 100% on
 
 **Petoi doc center:** <https://guide.petoi.com/>
 
+**Physical AI with Petoi robots:** <https://www.petoi.com/pages/quadruped-physical-ai?utm_source=github&utm_medium=code&utm_campaign=github-opencat-gemma&utm_content=readme-physical-ai>
+
 ## Showcase
 
 Petoi brought robots to [AGI House's Google Gemma Hardware Hackathon](https://www.agihouse.org/events/the-google-gemma-hardware-hackathon), and two teams chose Quaddle to build on with Gemma:
